@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment android:id="@+id/map"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="net.sytes.schneider.mobilechill.MainActivity"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+
 
 
 
@@ -19,21 +13,36 @@ android:orientation="vertical"
 tools:context="net.sytes.schneider.mobilechill.MainActivity">
 
 
+
+
     <FrameLayout
     android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/message"
+        <fragment android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/activity_vertical_margin"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
-            android:layout_marginRight="@dimen/activity_horizontal_margin"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:text="@string/title_activity_main" />
+            android:layout_height="match_parent"
+            tools:context="net.sytes.schneider.mobilechill.MainActivity"
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools" />
+
+        <android.support.v7.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/activity_vertical_margin"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                android:text="@string/title_activity_main" />
+        </android.support.v7.widget.CardView>
 
     </FrameLayout>
 
@@ -47,4 +56,4 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
 
 </LinearLayout>
 
-    </fragment>
+  <!--  </fragment> -->
