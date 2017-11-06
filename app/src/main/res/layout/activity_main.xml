@@ -63,13 +63,14 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                 app:cardElevation="0dp">
 
                 <TextView
+                    android:id="@+id/textView2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"
                     android:layout_marginRight="@dimen/activity_horizontal_margin"
                     android:layout_marginTop="@dimen/activity_vertical_margin"
-                    android:text="\n\n\n\n\n\n\nDAS ist ein \nNotikationszeug"
+                    android:text="\n\n\n\n\n\n\nDAS ist ein \nNotifikationszeug"
                     android:textAlignment="center"
                     android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
@@ -113,7 +114,7 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                     android:orientation="horizontal">
 
                     <Switch
-                        android:id="@+id/switch1"
+                        android:id="@+id/wifiswitch"
                         android:layout_width="wrap_content"
                         android:layout_height="42dp"
                         android:checked="true"
@@ -122,6 +123,22 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                         android:text="     WIFI"
                         android:textAlignment="center"
                         android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/wifidescribtion"
+                        android:layout_width="170dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="TextView"
+                        android:textAlignment="gravity"
+                        android:textAllCaps="false"
+                        android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+
+                    <ImageView
+                        android:id="@+id/wifistatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        app:srcCompat="@mipmap/ic_preference_wifi_grey" />
                 </LinearLayout>
 
             </android.support.v7.widget.CardView>

@@ -1,12 +1,19 @@
 package net.sytes.schneider.mobilechill;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -23,6 +30,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private TextView mTextMessage;
     private FrameLayout dashboard;
     private FrameLayout notifications;
+    private ImageView wifiStatus;
+    private TextView wifiDescribtion;
+    private Switch wifiSwitch;
 
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -74,23 +84,33 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     };
 
+    private Switch.OnClickListener wifiSwitchListener = new Switch.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+
+        }
+    };
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
         notifications = (FrameLayout) findViewById(R.id.notifications);
+        wifiStatus = (ImageView) findViewById(R.id.wifistatus);
+        wifiDescribtion = (TextView) findViewById(R.id.wifidescribtion);
 
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.«
         if( mMap == null) {
             try {
                 SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -101,6 +121,33 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 throw e;
             }
         }
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+            Log.e("MainActivity", "Got Connection\n\n");
+
+            wifiDescribtion.setText(netInfo.getDetailedState().toString() + "   " + netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED));
+            if(netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED) == 0){
+                wifiStatus.setVisibility(View.VISIBLE);
+            } else {
+                wifiStatus.setVisibility(View.INVISIBLE);
+            }
+            wifiStatus.setVisibility(View.VISIBLE);
+        }
+        else {
+            Log.e("MainActivity", "No Connection -> activate Wifi\n\n");
+
+            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+            wifiManager.setWifiEnabled(true);
+        }
+
+
+
+
+
+
+
 
     }
 
