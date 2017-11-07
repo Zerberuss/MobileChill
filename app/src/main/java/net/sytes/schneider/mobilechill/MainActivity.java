@@ -33,6 +33,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ImageView wifiStatus;
     private TextView wifiDescribtion;
     private Switch wifiSwitch;
+    private TextView wifiDetails;
 
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -104,6 +105,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         notifications = (FrameLayout) findViewById(R.id.notifications);
         wifiStatus = (ImageView) findViewById(R.id.wifistatus);
         wifiDescribtion = (TextView) findViewById(R.id.wifidescribtion);
+        wifiDetails = (TextView) findViewById(R.id.wifidetails);
+        wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
 
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
@@ -127,13 +130,26 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         if (netInfo != null && netInfo.isConnectedOrConnecting()) {
             Log.e("MainActivity", "Got Connection\n\n");
 
+
             wifiDescribtion.setText(netInfo.getDetailedState().toString() + "   " + netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED));
+            String wifiDetailsTxt = "";
+
+            wifiDetailsTxt += netInfo.getDetailedState().toString() + "\n";
+            wifiDetailsTxt += netInfo.getExtraInfo().toString() + "\n";
+            //wifiDetailsTxt += netInfo.getReason().toString() + "\n";
+
+            wifiDetails.setText(wifiDetailsTxt);
+
+
+
             if(netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED) == 0){
                 wifiStatus.setVisibility(View.VISIBLE);
             } else {
                 wifiStatus.setVisibility(View.INVISIBLE);
             }
             wifiStatus.setVisibility(View.VISIBLE);
+
+
         }
         else {
             Log.e("MainActivity", "No Connection -> activate Wifi\n\n");
