@@ -255,7 +255,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     public void startDashboard() {
-        startActivity(new Intent(this, DashboardActivity.class));
+        Intent i = new Intent(this, DashboardActivity.class);
+
+        unregisterReceiver(mWifiScanReceiver);
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
     }
 
 }

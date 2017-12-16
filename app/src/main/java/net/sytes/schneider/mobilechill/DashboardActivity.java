@@ -32,6 +32,9 @@ public class DashboardActivity extends Activity {
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
         notifications = (FrameLayout) findViewById(R.id.notifications);
         Switch wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
+
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
 
 
@@ -42,56 +45,29 @@ public class DashboardActivity extends Activity {
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.navigation_home:
-                    mTextMessage.setText(R.string.title_activity_main);
-                    if (notifications.getTranslationY() == 0) {
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    if (dashboard.getTranslationY() == 0) {
-                        dashboard.animate()
-                                .translationY(-dashboard.getHeight());
-                    }
                     startMainActivity();
                     return true;
 
-
                 case R.id.navigation_dashboard:
-                    mTextMessage.setText(R.string.title_dashboard);
-                    if (dashboard.getTranslationY() == -dashboard.getHeight()) {
-                        dashboard.animate()
-                                .translationY(0);
-                    }
-                    if (notifications.getTranslationY() == 0) {
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-
-                    //startDashboard();
                     return true;
 
                 case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
-                    if (notifications.getTranslationY() == -notifications.getHeight()) {
-                        notifications.animate()
-                                .translationY(0);
-                    }
-                    if (dashboard.getTranslationY() == 0) {
-                        dashboard.animate()
-                                .translationY(-dashboard.getHeight());
-                    }
                     return true;
             }
             return false;
         }
 
-        
+
     };
 
 
 
 
     public void startMainActivity() {
-        startActivity(new Intent(this, MainActivity.class));
+
+        Intent i = new Intent(this, MainActivity.class);
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
     }
 
 
