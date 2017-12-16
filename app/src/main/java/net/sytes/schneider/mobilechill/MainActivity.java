@@ -1,20 +1,26 @@
 package net.sytes.schneider.mobilechill;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.FragmentActivity;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -22,6 +28,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.util.List;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -33,10 +41,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ImageView wifiStatus;
     private TextView wifiDescribtion;
     private Switch wifiSwitch;
-    private TextView wifiDetails;
+    private TextView wifiDetailsTxt;
+
+    //WifiManager mWifiManager;
+    List<ScanResult> mScanResults;
+
+    private WifiManager mWifiManager;
 
 
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+    public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
         //Navigation
@@ -67,6 +80,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                                 .translationY(-notifications.getHeight());
                     }
 
+                    startDashboard();
+
+
+
+
                     return true;
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
@@ -85,12 +103,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     };
 
-    private Switch.OnClickListener wifiSwitchListener = new Switch.OnClickListener() {
-        @Override
-        public void onClick(View view) {
 
-        }
-    };
 
 
 
@@ -100,12 +113,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
         notifications = (FrameLayout) findViewById(R.id.notifications);
         wifiStatus = (ImageView) findViewById(R.id.wifistatus);
         wifiDescribtion = (TextView) findViewById(R.id.wifidescribtion);
-        wifiDetails = (TextView) findViewById(R.id.wifidetails);
+        wifiDetailsTxt = (TextView) findViewById(R.id.wifidetails);
+        wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
 
 
@@ -125,47 +140,43 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
-            Log.e("MainActivity", "Got Connection\n\n");
-
-
-            wifiDescribtion.setText(netInfo.getDetailedState().toString() + "   " + netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED));
-            String wifiDetailsTxt = "";
-
-            wifiDetailsTxt += netInfo.getDetailedState().toString() + "\n";
-            wifiDetailsTxt += netInfo.getExtraInfo().toString() + "\n";
-            //wifiDetailsTxt += netInfo.getReason().toString() + "\n";
-
-            wifiDetails.setText(wifiDetailsTxt);
 
 
 
-            if(netInfo.getDetailedState().compareTo(NetworkInfo.DetailedState.CONNECTED) == 0){
-                wifiStatus.setVisibility(View.VISIBLE);
-            } else {
-                wifiStatus.setVisibility(View.INVISIBLE);
+
+
+        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        //WifiManager mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        if (mWifiManager.isWifiEnabled() == false)
+        {
+            // If wifi disabled then enable it
+            Toast.makeText(getApplicationContext(), "enabled wifi...",
+                    Toast.LENGTH_LONG).show();
+
+            mWifiManager.setWifiEnabled(true);
+        }
+
+        wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    mWifiManager.setWifiEnabled(true);
+                    wifiDescribtion.setText("connecting");
+                }
+                else {
+                    mWifiManager.setWifiEnabled(false);
+                    wifiDescribtion.setText("Chilling\nturned off");
+                }
             }
-            wifiStatus.setVisibility(View.VISIBLE);
+        });
 
 
-        }
-        else {
-            Log.e("MainActivity", "No Connection -> activate Wifi\n\n");
+       registerReceiver(mWifiScanReceiver,
+                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
-            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-            wifiManager.setWifiEnabled(true);
-        }
-
-
-
-
-
-
-
-
+        mWifiManager.startScan();
     }
+
 
 
     /**
@@ -195,5 +206,60 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         notifications.animate().translationY(-notifications.getHeight());
     }
 
+
+
+    public String wifiDetails(List<ScanResult> wifiList){
+        String wifiTxt = "Found " + wifiList.size() + " WIFIs:";
+
+        for (ScanResult wifi : wifiList) {
+            wifiTxt += "\n";
+
+            wifiTxt += "\nSSID:  " + wifi.SSID;
+            wifiTxt += "\nBSSID  " + wifi.BSSID;
+            wifiTxt += "\nfrequency  " + wifi.frequency;
+            wifiTxt += "\nlevel:  " + wifi.level;
+            wifiTxt += "\ncapabilities  " + wifi.capabilities;
+            wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
+        }
+
+        wifiDetailsTxt.setText(wifiTxt);
+        return wifiTxt;
+    }
+
+    final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            // This condition is not necessary if you listen to only one action
+            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                wifiSwitch.setChecked(true);
+
+                List<ScanResult> mScanResults = mWifiManager.getScanResults();
+
+                ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+                NetworkInfo netInfo = cm.getActiveNetworkInfo();
+                if (netInfo != null && netInfo.isConnected())
+                    wifiDescribtion.setText(mWifiManager.getConnectionInfo().getSSID());
+                else if (netInfo != null && netInfo.isConnectedOrConnecting())
+                    wifiDescribtion.setText("connecting");
+                else
+                    wifiDescribtion.setText("no connection");
+
+
+                Log.i("MainActivity", "New Wifi Scan!\n");
+
+                wifiDetails(mScanResults);
+                Toast.makeText(getApplicationContext(), "Scan results are available", Toast.LENGTH_LONG).show();
+            }
+        }
+
+    };
+
+    public void startDashboard() {
+        Intent i = new Intent(this, DashboardActivity.class);
+
+        unregisterReceiver(mWifiScanReceiver);
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
+    }
 
 }
