@@ -17,6 +17,7 @@ import java.security.AccessControlException;
 
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
+    static final String ACTION_TAG = "LocationService";
     private static final int LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = 0;
 
@@ -35,6 +36,7 @@ public class LocationService extends Service {
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras)
         {
+
             Log.e(TAG, "onStatusChanged: " + provider);
         }
 
@@ -43,6 +45,12 @@ public class LocationService extends Service {
         {
             Log.e(TAG, "onLocationChanged: " + location);
             mLastLocation.set(location);
+
+            Intent newLocationIntent = new Intent(LocationService.TAG);
+            newLocationIntent.putExtra("locationA", location.getAltitude());
+            newLocationIntent.putExtra("locationLo", location.getLongitude());
+            newLocationIntent.putExtra("locationLa", location.getLatitude());
+            sendBroadcast(newLocationIntent);
         }
 
         @Override

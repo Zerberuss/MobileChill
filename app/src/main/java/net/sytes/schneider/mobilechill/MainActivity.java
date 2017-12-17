@@ -54,6 +54,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     List<ScanResult> mScanResults;
 
     private WifiManager mWifiManager;
+    private LocationService mLocationService;
 
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -155,7 +156,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         PackageManager.PERMISSION_GRANTED) {
-            
+
             startService(new Intent(this, LocationService.class));
 
         } else {
@@ -197,6 +198,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         mWifiManager.startScan();
+
+
+        registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
     }
 
 
@@ -217,7 +221,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             // Add a marker in Sydney and move the camera
             LatLng graz = new LatLng(47.074458, 15.438041);                 //	Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
-            //mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
 
         } catch (Exception e) {
@@ -273,6 +277,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
+    };
+
+    final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent){
+            System.out.println("Location Height: " + intent.getDoubleExtra("locationA",0));//
+            double lo = intent.getDoubleExtra("locationLo",0);
+            double la = intent.getDoubleExtra("locationLa",0);
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
+
+            // mMap.moveCamera(CameraUpdateFactory.newLatLng((LatLng) intent.getParcelableExtra("location")));
+        }
     };
 
     public void startDashboard() {
