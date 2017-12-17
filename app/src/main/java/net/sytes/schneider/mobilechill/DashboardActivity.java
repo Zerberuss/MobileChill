@@ -30,12 +30,12 @@ public class DashboardActivity extends Activity {
 
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
-        notifications = (FrameLayout) findViewById(R.id.notifications);
+
         Switch wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-        navigation.setSelectedItemId(R.id.navigation_dashboard);
+        navigation.setSelectedItemId(R.id.navigation_home);
     }
 
 
@@ -45,11 +45,11 @@ public class DashboardActivity extends Activity {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.navigation_home:
+                case R.id.navigation_dashboard:
                     startMainActivity();
                     return true;
 
-                case R.id.navigation_dashboard:
+                case R.id.navigation_home:
                     return true;
 
                 case R.id.navigation_notifications:
