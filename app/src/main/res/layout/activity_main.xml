@@ -139,20 +139,47 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
 
             <android.support.v7.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:cardElevation="17dp">
+                android:layout_height="match_parent" >
 
-                <TextView
-                    android:id="@+id/message"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                    android:layout_marginRight="@dimen/activity_horizontal_margin"
-                    android:layout_marginTop="@dimen/activity_vertical_margin"
-                    android:text="@string/title_activity_main"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
 
+                    <TextView
+                        android:id="@+id/message"
+                        android:layout_width="202dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/activity_vertical_margin"
+                        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                        android:layout_marginRight="@dimen/activity_horizontal_margin"
+                        android:layout_marginTop="@dimen/activity_vertical_margin"
+                        android:layout_weight="1"
+                        android:text="@string/title_activity_main"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+
+                    <Switch
+                        android:id="@+id/locationTrackingSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:checked="true"
+                        android:splitTrack="true"
+                        android:switchPadding="12dp"
+                        android:text="GPS Tracking"
+                        android:textAlignment="textStart"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/space"
+                        android:layout_width="20dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/activity_vertical_margin"
+                        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                        android:layout_marginRight="@dimen/activity_horizontal_margin"
+                        android:layout_marginTop="@dimen/activity_vertical_margin"
+                        android:layout_weight="1"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+                </LinearLayout>
             </android.support.v7.widget.CardView>
 
             <android.support.v7.widget.CardView

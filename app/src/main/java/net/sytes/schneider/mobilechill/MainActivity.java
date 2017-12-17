@@ -1,9 +1,11 @@
 package net.sytes.schneider.mobilechill;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -11,7 +13,9 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -35,18 +39,23 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
 
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
+
+
     private TextView mTextMessage;
     private FrameLayout dashboard;
     private FrameLayout notifications;
     private ImageView wifiStatus;
     private TextView wifiDescribtion;
     private Switch wifiSwitch;
+    private Switch locationTrackingSwitch;
     private TextView wifiDetailsTxt;
 
     //WifiManager mWifiManager;
     List<ScanResult> mScanResults;
 
     private WifiManager mWifiManager;
+    private LocationService mLocationService;
 
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -114,6 +123,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_main);
 
 
+
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
         notifications = (FrameLayout) findViewById(R.id.notifications);
@@ -122,6 +132,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         wifiDetailsTxt = (TextView) findViewById(R.id.wifidetails);
         wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
+        locationTrackingSwitch = (Switch) findViewById(R.id.locationTrackingSwitch);
+
 
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
@@ -142,6 +154,20 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
+        //Check permissions and start Location Service
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            startService(new Intent(this, LocationService.class));
+
+        } else {
+                ActivityCompat.requestPermissions(this, new String[] {
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION },
+                        MY_PERMISSIONS_REQUEST_LOCATION);
+        }
 
 
 
@@ -175,6 +201,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         mWifiManager.startScan();
+
+
+        registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
     }
 
 
@@ -195,7 +224,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             // Add a marker in Sydney and move the camera
             LatLng graz = new LatLng(47.074458, 15.438041);                 //	Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
-            //mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
 
         } catch (Exception e) {
@@ -205,7 +234,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         dashboard.animate().translationY(-dashboard.getHeight());
         notifications.animate().translationY(-notifications.getHeight());
     }
-
 
 
     public String wifiDetails(List<ScanResult> wifiList){
@@ -254,10 +282,24 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     };
 
+    final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent){
+            System.out.println("Location Height: " + intent.getDoubleExtra("locationA",0));//
+            double lo = intent.getDoubleExtra("locationLo",0);
+            double la = intent.getDoubleExtra("locationLa",0);
+            if (locationTrackingSwitch.isChecked())
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
+        }
+    };
+
     public void startDashboard() {
         Intent i = new Intent(this, DashboardActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
+        unregisterReceiver(mLocationReceiver);
+
+
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
