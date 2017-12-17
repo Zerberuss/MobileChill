@@ -1,9 +1,11 @@
 package net.sytes.schneider.mobilechill;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -11,7 +13,9 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -34,6 +38,9 @@ import java.util.List;
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
+
 
     private TextView mTextMessage;
     private FrameLayout dashboard;
@@ -114,6 +121,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_main);
 
 
+
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
         notifications = (FrameLayout) findViewById(R.id.notifications);
@@ -142,6 +150,20 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
+        //Check permissions and start Location Service
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+            
+            startService(new Intent(this, LocationService.class));
+
+        } else {
+                ActivityCompat.requestPermissions(this, new String[] {
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION },
+                        MY_PERMISSIONS_REQUEST_LOCATION);
+        }
 
 
 
@@ -205,7 +227,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         dashboard.animate().translationY(-dashboard.getHeight());
         notifications.animate().translationY(-notifications.getHeight());
     }
-
 
 
     public String wifiDetails(List<ScanResult> wifiList){
