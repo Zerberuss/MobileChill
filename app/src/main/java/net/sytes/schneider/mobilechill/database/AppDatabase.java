@@ -15,7 +15,6 @@ public abstract class AppDatabase extends RoomDatabase{
     public abstract LocationDao locationsDao();
     public abstract WirelessNetworkDao wirelessNetworkDao();
 
-    private static AppDatabase INSTANCE;
 
 
 }
