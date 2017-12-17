@@ -1,11 +1,14 @@
 package net.sytes.schneider.mobilechill;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -26,13 +29,23 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
+import net.sytes.schneider.mobilechill.database.AppDatabase;
+import net.sytes.schneider.mobilechill.database.Converter.Converters;
+import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.LocationDao;
+
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -51,6 +64,12 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Switch locationTrackingSwitch;
     private TextView wifiDetailsTxt;
 
+    private LocationDao locationDao;
+    private Converters CONVERTER;
+    private AppDatabase appDatabase;
+    private FusedLocationProviderClient mFusedLocationClient;
+
+
     //WifiManager mWifiManager;
     List<ScanResult> mScanResults;
 
@@ -67,11 +86,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             switch (item.getItemId()) {
                 case R.id.navigation_home:
                     mTextMessage.setText(R.string.title_activity_main);
-                    if(notifications.getTranslationY() == 0 ){
+                    if (notifications.getTranslationY() == 0) {
                         notifications.animate()
                                 .translationY(-notifications.getHeight());
                     }
-                    if(dashboard.getTranslationY() == 0 ){
+                    if (dashboard.getTranslationY() == 0) {
                         dashboard.animate()
                                 .translationY(-dashboard.getHeight());
                     }
@@ -80,11 +99,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 case R.id.navigation_dashboard:
                     mTextMessage.setText(R.string.title_dashboard);
-                    if(dashboard.getTranslationY() == -dashboard.getHeight() ) {
+                    if (dashboard.getTranslationY() == -dashboard.getHeight()) {
                         dashboard.animate()
                                 .translationY(0);
                     }
-                    if(notifications.getTranslationY() == 0 ){
+                    if (notifications.getTranslationY() == 0) {
                         notifications.animate()
                                 .translationY(-notifications.getHeight());
                     }
@@ -92,16 +111,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     startDashboard();
 
 
-
-
                     return true;
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
-                    if(notifications.getTranslationY() == -notifications.getHeight() ){
+                    if (notifications.getTranslationY() == -notifications.getHeight()) {
                         notifications.animate()
                                 .translationY(0);
                     }
-                    if(dashboard.getTranslationY() == 0 ){
+                    if (dashboard.getTranslationY() == 0) {
                         dashboard.animate()
                                 .translationY(-dashboard.getHeight());
                     }
@@ -113,9 +130,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
 
-
-
-
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -123,6 +138,44 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_main);
 
 
+
+        /*
+
+                DEVELOPING
+                CHANGE WHEN LIVE
+
+         */
+        //create DB
+        appDatabase = Room.databaseBuilder(getApplicationContext(),
+                AppDatabase.class, "app-database").allowMainThreadQueries().build();
+        /*mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        Task<Location> myLocTask = mFusedLocationClient.getLastLocation();
+
+        Location myLoc = myLocTask.getResult();
+
+        Log.d("LOCATION DATA:",myLoc.toString());*/
+
+        //remove when live
+        Date today = new Date();
+        today.setTime(0);
+        LocationEntity testLoc = new LocationEntity();
+        testLoc.setName("Graz");
+
+        System.out.print(today);
+
+
+        appDatabase.locationsDao().insertLocation(testLoc);
+        System.out.print("LocationEntity has been added to DB");
+        Log.d("INFO", "LocationEntity has been added");
+        List<LocationEntity> locationEntityList = appDatabase.locationsDao().getAllLocations();
+        Log.d("INFO", locationEntityList.toString());
+
+        /*
+
+            DO NOT USE DB ON MAIN THREAD
+
+         */
 
         mTextMessage = (TextView) findViewById(R.id.message);
         dashboard = (FrameLayout) findViewById(R.id.dashboard);
@@ -141,7 +194,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.«
-        if( mMap == null) {
+        if (mMap == null) {
             try {
                 SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                         .findFragmentById(R.id.map);
@@ -153,29 +206,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-
-        //Check permissions and start Location Service
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED) {
-
-            startService(new Intent(this, LocationService.class));
-
-        } else {
-                ActivityCompat.requestPermissions(this, new String[] {
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION },
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-        }
-
-
-
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         //WifiManager mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        if (mWifiManager.isWifiEnabled() == false)
-        {
+        if (mWifiManager.isWifiEnabled() == false) {
             // If wifi disabled then enable it
             Toast.makeText(getApplicationContext(), "enabled wifi...",
                     Toast.LENGTH_LONG).show();
@@ -188,8 +222,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 if (isChecked) {
                     mWifiManager.setWifiEnabled(true);
                     wifiDescribtion.setText("connecting");
-                }
-                else {
+                } else {
                     mWifiManager.setWifiEnabled(false);
                     wifiDescribtion.setText("Chilling\nturned off");
                 }
@@ -197,7 +230,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
 
-       registerReceiver(mWifiScanReceiver,
+        registerReceiver(mWifiScanReceiver,
                 new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         mWifiManager.startScan();
@@ -205,7 +238,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
     }
-
 
 
     /**
@@ -216,7 +248,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
-    */
+     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -226,6 +258,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            mMap.setMyLocationEnabled(true);
 
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
@@ -236,7 +279,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    public String wifiDetails(List<ScanResult> wifiList){
+    public String wifiDetails(List<ScanResult> wifiList) {
         String wifiTxt = "Found " + wifiList.size() + " WIFIs:";
 
         for (ScanResult wifi : wifiList) {
