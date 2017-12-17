@@ -48,6 +48,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ImageView wifiStatus;
     private TextView wifiDescribtion;
     private Switch wifiSwitch;
+    private Switch locationTrackingSwitch;
     private TextView wifiDetailsTxt;
 
     //WifiManager mWifiManager;
@@ -131,6 +132,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         wifiDetailsTxt = (TextView) findViewById(R.id.wifidetails);
         wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
+        locationTrackingSwitch = (Switch) findViewById(R.id.locationTrackingSwitch);
+
 
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
@@ -285,9 +288,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             System.out.println("Location Height: " + intent.getDoubleExtra("locationA",0));//
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
-
-            // mMap.moveCamera(CameraUpdateFactory.newLatLng((LatLng) intent.getParcelableExtra("location")));
+            if (locationTrackingSwitch.isChecked())
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
         }
     };
 
@@ -295,6 +297,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         Intent i = new Intent(this, DashboardActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
+        unregisterReceiver(mLocationReceiver);
+
+
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
