@@ -12,10 +12,10 @@ import java.util.Date;
  * Created by Timo Hasenbichler on 16.12.2017.
  */
 @Entity
-public class Location {
+public class LocationEntity {
 
 
-    public Location() {
+    public LocationEntity() {
     }
 
 

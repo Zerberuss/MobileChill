@@ -13,21 +13,21 @@ import java.util.List;
  */
 
 @Dao
-public interface LocationsDao {
+public interface LocationDao {
 
 
-    @Query("Select * from Location")
-    List<Location> getAllLocations();
+    @Query("Select * from LocationEntity")
+    List<LocationEntity> getAllLocations();
 
     @Insert
-    void insertLocation(Location location);
+    void insertLocation(LocationEntity locationEntity);
 
     @Update
-    void updateLocation(Location location);
+    void updateLocation(LocationEntity locationEntity);
 
 
     @Delete
-    void deleteLocation(Location location);
+    void deleteLocation(LocationEntity locationEntity);
 
 
 }
