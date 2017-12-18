@@ -74,9 +74,13 @@ public class ConnectionService extends Service {
         @Override
         public void onReceive(Context c, Intent intent) {
             Log.w(TAG, "New Connection Info will be sent out..");
-            intent.getBooleanExtra("isWifiOn", false);
+            boolean wifiOn = intent.getBooleanExtra("isWifiOn", true);
+            mWifiManager.setWifiEnabled(wifiOn);
             broadcastConnectionInfos();
-            mWifiManager.startScan();
+
+            if(wifiOn){
+                mWifiManager.startScan();
+            }
         }
     };
 

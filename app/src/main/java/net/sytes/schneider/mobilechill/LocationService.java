@@ -20,8 +20,8 @@ import java.security.AccessControlException;
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
     static final String ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 100;
-    private static final float LOCATION_DISTANCE = 0;
+    private static final int LOCATION_INTERVAL = 1000;
+    private static final float LOCATION_DISTANCE = 10;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
     private LocationManager mLocationManager = null;

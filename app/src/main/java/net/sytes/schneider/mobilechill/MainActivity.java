@@ -207,8 +207,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                newConnectionIntent.putExtra("isWifiOn", wifiSwitch.isChecked());
+                newConnectionIntent.putExtra("isWifiOn", isChecked);
                 sendBroadcast(newConnectionIntent);
+            }
+        });
+
+        locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
+                sendBroadcast(newLocationIntent);
             }
         });
 

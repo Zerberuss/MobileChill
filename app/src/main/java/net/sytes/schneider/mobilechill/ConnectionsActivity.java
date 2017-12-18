@@ -79,7 +79,7 @@ public class ConnectionsActivity extends Activity {
         wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-            newConnectionIntent.putExtra("isWifiOn", wifiSwitch.isChecked());
+            newConnectionIntent.putExtra("isWifiOn", isChecked);
             sendBroadcast(newConnectionIntent);
             }
         });
