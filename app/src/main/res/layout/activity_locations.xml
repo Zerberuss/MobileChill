@@ -21,7 +21,7 @@
         android:visibility="visible" />
 
     <Button
-        android:id="@+id/button:id1"
+        android:id="@+id/button_id1"
         android:layout_width="155dp"
         android:layout_height="36dp"
         android:text="Save new Chill"

@@ -23,6 +23,9 @@ public class LocationEntity {
     @ColumnInfo(name = "name")
     private String name;
 
+    @ColumnInfo(name="displayName")
+    private String displayName;
+
     //geolocation from google api
     @ColumnInfo(name = "latidude")
     private Double latidude;
@@ -111,6 +114,14 @@ public class LocationEntity {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }
 
