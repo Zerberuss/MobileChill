@@ -82,44 +82,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 case R.id.navigation_dashboard:
                     mTextMessage.setText(R.string.title_dashboard);
-                    /*
-                    if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
-                        nearbyWifiList.animate()
-                                .translationY(0);
-                    }
-                    if(notifications.getTranslationY() == 0 ){
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    */
                     return true;
 
                 case R.id.navigation_home:
                     mTextMessage.setText(R.string.title_activity_main);
-                    /*
-                    if(notifications.getTranslationY() == 0 ){
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    if(nearbyWifiList.getTranslationY() == 0 ){
-                        nearbyWifiList.animate()
-                                .translationY(-nearbyWifiList.getHeight());
-                    }
-                    */
                     switchToHomeLocations();
                     return true;
 
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
-                    /*
-                    if(notifications.getTranslationY() == -notifications.getHeight() ){
-                        notifications.animate()
-                                .translationY(0);
-                    }
-                    if(nearbyWifiList.getTranslationY() == 0 ){
-                        nearbyWifiList.animate()
-                                .translationY(-nearbyWifiList.getHeight());
-                    }*/
+                    switchToConnections();
                     return true;
             }
             return false;
@@ -216,28 +188,32 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_NETWORK_STATE) ==
+                        PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_WIFI_STATE) ==
+                        PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.CHANGE_WIFI_STATE) ==
                         PackageManager.PERMISSION_GRANTED) {
 
             startService(new Intent(this, LocationService.class));
+            startService(new Intent(this, ConnectionService.class));
+            Log.i("MAIN", "Started Services");
 
         } else {
             ActivityCompat.requestPermissions(this, new String[] {
                             Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION },
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_NETWORK_STATE,
+                            Manifest.permission.ACCESS_WIFI_STATE,
+                            Manifest.permission.CHANGE_WIFI_STATE},
                     MY_PERMISSIONS_REQUEST_LOCATION);
         }
 
 
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        wifiSwitch.setChecked(mWifiManager.isWifiEnabled());
 
-        //WifiManager mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        if (mWifiManager.isWifiEnabled() == false) {
-            // If wifi disabled then enable it
-            Toast.makeText(getApplicationContext(), "enabled wifi...",
-                    Toast.LENGTH_LONG).show();
-
-            mWifiManager.setWifiEnabled(true);
-        }
 
         wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -353,6 +329,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void switchToHomeLocations() {
         Intent i = new Intent(this, DashboardActivity.class);
+
+        unregisterReceiver(mWifiScanReceiver);
+        unregisterReceiver(mLocationReceiver);
+
+
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
+    }
+
+    public void switchToConnections() {
+        Intent i = new Intent(this, ConnectionsActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);

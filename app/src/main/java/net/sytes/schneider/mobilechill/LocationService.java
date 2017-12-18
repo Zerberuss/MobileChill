@@ -18,15 +18,15 @@ import java.security.AccessControlException;
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
     static final String ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 10;
+    private static final int LOCATION_INTERVAL = 100;
     private static final float LOCATION_DISTANCE = 0;
 
     private LocationManager mLocationManager = null;
 
+    private Location mLastLocation = null;
+
     private class LocationListener implements android.location.LocationListener
     {
-        Location mLastLocation;
-
         public LocationListener(String provider)
         {
             Log.e(TAG, "LocationListener " + provider);
@@ -43,10 +43,12 @@ public class LocationService extends Service {
         @Override
         public void onLocationChanged(Location location)
         {
-            Log.e(TAG, "onLocationChanged: " + location);
-            mLastLocation.set(location);
 
-            Intent newLocationIntent = new Intent(LocationService.TAG);
+            Log.e(TAG, "onLocationChanged: " + location);
+
+            checkForHomeConnection(location);
+
+            Intent newLocationIntent = new Intent(LocationService.ACTION_TAG);
             newLocationIntent.putExtra("locationA", location.getAltitude());
             newLocationIntent.putExtra("locationLo", location.getLongitude());
             newLocationIntent.putExtra("locationLa", location.getLatitude());
@@ -140,7 +142,18 @@ public class LocationService extends Service {
             Toast.makeText(this, "Please confirm location access!", Toast.LENGTH_LONG).show();
             throw new AccessControlException("No Permission to location for location service");
         }
+    }
 
+    void checkForHomeConnection(Location location){
+        System.out.print("Implement DB request and check for Homelocation");
+        boolean isHome = false;
+        boolean activateWlan = true;
+
+        /*
+        if(isHome && activateWlan){
+
+        }
+        */
 
     }
 }

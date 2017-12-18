@@ -53,6 +53,7 @@ public class DashboardActivity extends Activity {
                     return true;
 
                 case R.id.navigation_notifications:
+                    startConnectionsActivity();
                     return true;
             }
             return false;
@@ -67,6 +68,13 @@ public class DashboardActivity extends Activity {
     public void startMainActivity() {
 
         Intent i = new Intent(this, MainActivity.class);
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
+    }
+
+    public void startConnectionsActivity() {
+
+        Intent i = new Intent(this, ConnectionsActivity.class);
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
