@@ -44,7 +44,6 @@ public class LocationActivity extends ListActivity {
     private List<LocationEntity> locationEntities;
 
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,18 +147,18 @@ public class LocationActivity extends ListActivity {
             switch (item.getItemId()) {
 
                 case R.id.navigation_dashboard:
-                    Intent y = new Intent(getApplicationContext() , WirelessNetworkActivity.class);
+                    Intent y = new Intent(getApplicationContext() , MainActivity.class);
                     startActivity(y);
                     return true;
 
                 case R.id.navigation_home:
-                    Intent x = new Intent(getApplicationContext() , MainActivity.class);
+                    Intent x = new Intent(getApplicationContext() , LocationActivity.class);
                     startActivity(x);
 
                     return true;
 
                 case R.id.navigation_notifications:
-                    Intent i = new Intent(getApplicationContext() , LocationActivity.class);
+                    Intent i = new Intent(getApplicationContext() , ConnectionsActivity.class);
                     startActivity(i);
                     return true;
             }

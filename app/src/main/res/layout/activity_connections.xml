@@ -10,7 +10,7 @@ android:id="@+id/container"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
 android:orientation="vertical"
-tools:context="net.sytes.schneider.mobilechill.DashboardActivity">
+tools:context="net.sytes.schneider.mobilechill.ConnectionsActivity">
 
     <FrameLayout
     android:id="@+id/content"
@@ -90,7 +90,7 @@ tools:context="net.sytes.schneider.mobilechill.DashboardActivity">
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"
                     android:layout_marginRight="@dimen/activity_horizontal_margin"
                     android:layout_marginTop="@dimen/activity_vertical_margin"
-                    android:text="@string/title_notifications"
+                    android:text="@string/title_HomeLocation"
                     android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
             </android.support.v7.widget.CardView>

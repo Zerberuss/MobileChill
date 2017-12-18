@@ -90,7 +90,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     return true;
 
                 case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
+                    mTextMessage.setText(R.string.title_HomeLocation);
                     switchToConnections();
                     return true;
             }
@@ -329,7 +329,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     public void switchToHomeLocations() {
-        Intent i = new Intent(this, WirelessNetworkActivity.class);
+        Intent i = new Intent(this, LocationActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);

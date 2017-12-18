@@ -43,7 +43,7 @@ public class ConnectionsActivity extends Activity {
                     return true;
 
                 case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
+                    mTextMessage.setText(R.string.title_HomeLocation);
                     return true;
             }
             return false;
@@ -100,7 +100,7 @@ public class ConnectionsActivity extends Activity {
 
 
     public void switchToHomeLocations() {
-        Intent i = new Intent(this, DashboardActivity.class);
+        Intent i = new Intent(this, LocationActivity.class);
 
         //unregisterReceiver(mWifiScanReceiver);
 
