@@ -8,6 +8,9 @@
 
     You can also add your credentials to an existing key, using these values:
 
+
+    TIMOKEY: AIzaSyD6IamFYwYu_tX1zG5CSEAdKjNC6xGgIbA
+
     Package name:
     83:3B:DC:46:14:80:AD:FC:6D:D6:20:B6:5B:D7:BC:A4:27:F9:40:2A
 
@@ -20,5 +23,5 @@
     Once you have your key (it starts with "AIza"), replace the "google_maps_key"
     string in this file.
     -->
-    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyAUEf6bfEL02K9IfwmbbXzix0gq8yoWYt0</string>
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyD6IamFYwYu_tX1zG5CSEAdKjNC6xGgIbA</string>
 </resources>

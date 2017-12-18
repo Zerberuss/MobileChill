@@ -323,12 +323,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
+                Log.i("location",lo+" "+la);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(la, lo)));
         }
     };
 
     public void switchToHomeLocations() {
-        Intent i = new Intent(this, DashboardActivity.class);
+        Intent i = new Intent(this, WirelessNetworkActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);

@@ -3,5 +3,6 @@
     <string name="app_version">0.0</string>
     <string name="title_activity_main">Home Locations</string>
     <string name="title_dashboard">Map</string>
-    <string name="title_notifications">WIFI</string>
+    <string name="title_HomeLocation">WIFI</string>
+    <string name="title_HomeLocations">Saved locations</string>
 </resources>

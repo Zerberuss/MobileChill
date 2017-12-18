@@ -29,5 +29,8 @@ public interface LocationDao {
     @Delete
     void deleteLocation(LocationEntity locationEntity);
 
+    @Query("Select * from locationentity where latidude LIKE :lat AND longitude LIKE :lon")
+    List<LocationEntity> checkIfinDB(double lat, double lon);
+
 
 }
