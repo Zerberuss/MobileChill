@@ -135,7 +135,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        appDatabase = Room.databaseBuilder(getApplicationContext(),
+                AppDatabase.class, "app-database").allowMainThreadQueries().build();
+       //appDatabase = Room.databaseBuilder(getApplicationContext(),AppDatabase.class, "app-database").build();
 
         /*
 
@@ -144,9 +146,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
          */
         //create DB
-        appDatabase = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "app-database").allowMainThreadQueries().build();
-        /*mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+       /* mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         Task<Location> myLocTask = mFusedLocationClient.getLastLocation();
 
@@ -160,14 +161,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         LocationEntity testLoc = new LocationEntity();
         testLoc.setName("Graz");
 
-        System.out.print(today);
-
-
         appDatabase.locationsDao().insertLocation(testLoc);
         System.out.print("LocationEntity has been added to DB");
-        Log.d("INFO", "LocationEntity has been added");
+        Log.i("INFO", "LocationEntity has been added");
         List<LocationEntity> locationEntityList = appDatabase.locationsDao().getAllLocations();
-        Log.d("INFO", locationEntityList.toString());
+        Log.i("INFO", locationEntityList.toString());
 
         /*
 
