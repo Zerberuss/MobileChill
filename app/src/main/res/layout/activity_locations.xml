@@ -1,38 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/container"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/framelayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="net.sytes.schneider.mobilechill.LocationActivity">
+    android:layout_height="match_parent">
 
-    <ListView
-        android:id="@android:id/list"
-        android:layout_width="match_parent"
-        android:layout_height="477dp" />
-
-    <Button
-        android:id="@+id/button_id"
-        android:layout_width="156dp"
-        android:layout_height="36dp"
-        android:text="Show Home Locations"
-        android:visibility="visible" />
-
-    <Button
-        android:id="@+id/button_id1"
-        android:layout_width="155dp"
-        android:layout_height="36dp"
-        android:text="Save new Chill"
-        android:visibility="visible" />
-
-    <android.support.design.widget.BottomNavigationView
-        android:id="@+id/navigation"
+    <LinearLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="bottom"
-        android:background="?android:attr/windowBackground"
-        app:menu="@menu/navigation" />
 
-</LinearLayout>
+        android:orientation="vertical"
+        tools:context="net.sytes.schneider.mobilechill.LocationActivity">
+
+        <ListView
+            android:id="@android:id/list"
+            android:layout_width="match_parent"
+            android:layout_height="472dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_id1"
+                android:layout_width="173dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="Save new Chill"
+                android:visibility="visible" />
+
+            <Button
+                android:id="@+id/button_id"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="Show Home Locations"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <android.support.design.widget.BottomNavigationView
+            android:id="@+id/navigation"
+            android:layout_width="match_parent"
+            android:layout_height="59dp"
+            android:layout_gravity="bottom"
+            android:background="?android:attr/windowBackground"
+            app:menu="@menu/navigation">
+
+        </android.support.design.widget.BottomNavigationView>
+
+
+    </LinearLayout>
+</FrameLayout>

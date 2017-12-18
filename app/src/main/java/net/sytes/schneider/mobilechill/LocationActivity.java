@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -11,6 +12,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -49,30 +51,28 @@ public class LocationActivity extends ListActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_locations);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setSelectedItemId(R.id.navigation_notifications);
+        navigation.setSelectedItemId(R.id.navigation_home);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
                 AppDatabase.class, "app-database").allowMainThreadQueries().build();
 
 
-
-
         final Button button1 = (Button) findViewById(R.id.button_id1);
         final Button button = (Button) findViewById(R.id.button_id);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-            //Execute on main thread
+                //Execute on main thread
 
                 locationEntities = appDatabase.locationsDao().getAllLocations();
                 List<String> arrOfLoc = new ArrayList<>();
                 locationEntities.forEach(e -> {
-                    String tempStr = e.getName()+" "+e.getLatidude()+" "+e.getLongitude();
+                    String tempStr = e.getName() + " " + e.getLatidude() + " " + e.getLongitude();
                     arrOfLoc.add(tempStr);
                 });
-                ArrayAdapter<String> adapter = new ArrayAdapter<String>(getListView().getContext(),android.R.layout.simple_expandable_list_item_1,arrOfLoc);
+                ArrayAdapter<String> adapter = new ArrayAdapter<String>(getListView().getContext(), android.R.layout.simple_expandable_list_item_1, arrOfLoc);
                 getListView().setAdapter(adapter);
-                Log.i("Info",locationEntities.toString());
+                Log.i("Info", locationEntities.toString());
 
 
             }
@@ -81,6 +81,16 @@ public class LocationActivity extends ListActivity {
 
             LocationEntity locationEntity = new LocationEntity();
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
                 @Override
                 public void onSuccess(Location location) {
@@ -97,10 +107,10 @@ public class LocationActivity extends ListActivity {
 
                         Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
                         try {
-                            List<Address> list = geocoder.getFromLocation(locationEntity.getLatidude(),locationEntity.getLongitude(),1);
-                            if(null!=list & list.size()>0){
+                            List<Address> list = geocoder.getFromLocation(locationEntity.getLatidude(), locationEntity.getLongitude(), 1);
+                            if (null != list & list.size() > 0) {
                                 String name = list.get(0).getCountryName();
-                                Log.i("my location",name);
+                                Log.i("my location", name);
                                 locationEntity.setName(name);
                             }
 
@@ -109,19 +119,17 @@ public class LocationActivity extends ListActivity {
                         }
 
                         //if not in db
-                        if(!checkIfinDatabase(locationEntity)){
+                        if (!checkIfinDatabase(locationEntity)) {
                             appDatabase.locationsDao().insertLocation(locationEntity);
 
                         } else {
 
-                            Log.i("DUPLICATE","ALREADY IN DB");
+                            Log.i("DUPLICATE", "ALREADY IN DB");
                         }
 
 
-
-
                         //set force disable
-                        Log.i("MY CURRENT LOCATION","LAT="+location.getLatitude()+"  LONG="+location.getLongitude());
+                        Log.i("MY CURRENT LOCATION", "LAT=" + location.getLatitude() + "  LONG=" + location.getLongitude());
                     }
                 }
             });
