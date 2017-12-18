@@ -1,16 +1,13 @@
 package net.sytes.schneider.mobilechill;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -27,7 +24,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -63,12 +59,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationDao locationDao;
     private Converters CONVERTER;
     private AppDatabase appDatabase;
-
-
-    //WifiManager mWifiManager;
-    List<ScanResult> mScanResults;
-
-    private WifiManager mWifiManager;
 
 
 
@@ -155,6 +145,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         locationTrackingSwitch = (Switch) findViewById(R.id.locationTrackingSwitch);
 
 
+        nearbyWifiList.animate().translationY(-2000);
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
@@ -186,7 +177,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Check permissions and start Location Service
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED &&
+                        PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_NETWORK_STATE) ==
@@ -196,8 +187,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.CHANGE_WIFI_STATE) ==
                         PackageManager.PERMISSION_GRANTED) {
 
-            startService(new Intent(this, LocationService.class));
-            startService(new Intent(this, ConnectionService.class));
+            if(!isMyServiceRunning(LocationService.class))
+                startService(new Intent(this, LocationService.class));
+            if(!isMyServiceRunning(ConnectionService.class))
+                startService(new Intent(this, ConnectionService.class));
             Log.i("MAIN", "Started Services");
 
         } else {
@@ -211,30 +204,31 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        wifiSwitch.setChecked(mWifiManager.isWifiEnabled());
-
-
         wifiSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    mWifiManager.setWifiEnabled(true);
-                    wifiDescription.setText("connecting");
-                }
-                else {
-                    mWifiManager.setWifiEnabled(false);
-                    wifiDescription.setText("Chilling\nturned off");
-                }
+                Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+                newConnectionIntent.putExtra("isWifiOn", isChecked);
+                sendBroadcast(newConnectionIntent);
+            }
+        });
+
+        locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
+                sendBroadcast(newLocationIntent);
             }
         });
 
 
         registerReceiver(mWifiScanReceiver,
-                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
+        registerReceiver(mLocationReceiver,
+                new IntentFilter(LocationService.ACTION_TAG));
 
-        mWifiManager.startScan();
-
-        registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
+        Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
+        sendBroadcast(newLocationIntent);
+        Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+        sendBroadcast(newConnectionIntent);
     }
 
 
@@ -265,55 +259,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-        nearbyWifiList.animate().translationY(-2000);
     }
 
-
-    public String wifiDetails(List<ScanResult> wifiList){
-        String wifiTxt = "Add one of these " + wifiList.size() + " WIFI(s):";
-
-        for (ScanResult wifi : wifiList) {
-            wifiTxt += "\n";
-
-            wifiTxt += "\n " + wifi.SSID;
-            /*wifiTxt += "\nBSSID  " + wifi.BSSID;
-            wifiTxt += "\nfrequency  " + wifi.frequency;
-            wifiTxt += "\nlevel:  " + wifi.level;
-            wifiTxt += "\ncapabilities  " + wifi.capabilities;
-            wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
-            */
-        }
-
-        wifiDetailsTxt.setText(wifiTxt);
-        return wifiTxt;
-    }
 
     final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            // This condition is not necessary if you listen to only one action
-            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                wifiSwitch.setChecked(true);
-
-                List<ScanResult> mScanResults = mWifiManager.getScanResults();
-
-                ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-                NetworkInfo netInfo = cm.getActiveNetworkInfo();
-                if (netInfo != null && netInfo.isConnected())
-                    wifiDescription.setText(mWifiManager.getConnectionInfo().getSSID());
-                else if (netInfo != null && netInfo.isConnectedOrConnecting())
-                    wifiDescription.setText("connecting");
-                else
-                    wifiDescription.setText("no connection");
-
-
-                Log.i("MainActivity", "New Wifi Scan!\n");
-
-                wifiDetails(mScanResults);
-                Toast.makeText(getApplicationContext(), "Scan results are available", Toast.LENGTH_LONG).show();
-            }
+            wifiDetailsTxt.setText(intent.getStringExtra("wifiSSIDList"));
+            wifiDescription.setText(intent.getStringExtra("wifiConnection"));
         }
-
     };
 
     final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
@@ -324,9 +278,21 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
                 Log.i("location",lo+" "+la);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(la, lo)));
+                if (mMap != null)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo),19f));
         }
     };
+
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public void switchToHomeLocations() {
         Intent i = new Intent(this, LocationActivity.class);
