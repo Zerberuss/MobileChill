@@ -1,11 +1,12 @@
 package net.sytes.schneider.mobilechill;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -26,7 +27,6 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -36,8 +36,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
-import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.LocationDao;
+import net.sytes.schneider.mobilechill.database.LocationEntity;
 
 import java.util.Date;
 import java.util.List;
@@ -69,7 +69,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private WifiManager mWifiManager;
 
 
-    private LatLng currentLocation;
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -105,7 +104,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                                 .translationY(-nearbyWifiList.getHeight());
                     }
                     */
-                    Homelocations();
+                    switchToHomeLocations();
                     return true;
 
                 case R.id.navigation_notifications:
@@ -128,7 +127,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -189,12 +187,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         navigation.setSelectedItemId(R.id.navigation_dashboard);
 
-
         addHomeButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
+                if(nearbyWifiList.getTranslationY() == -2000 ) {
                     nearbyWifiList.animate()
-                            .translationY(+300);
+                            .translationY(300);
+                } else {
+                    nearbyWifiList.animate()
+                            .translationY(-2000);
                 }
             }
         });
@@ -209,6 +209,21 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.e("MainActivity", "Failed to create map!", e);
                 throw e;
             }
+        }
+
+        //Check permissions and start Location Service
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            startService(new Intent(this, LocationService.class));
+
+        } else {
+            ActivityCompat.requestPermissions(this, new String[] {
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION },
+                    MY_PERMISSIONS_REQUEST_LOCATION);
         }
 
 
@@ -243,7 +258,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mWifiManager.startScan();
 
         registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
-
     }
 
 
@@ -256,7 +270,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
-    @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -265,13 +278,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng graz = new LatLng(47.074458, 15.438041);                 //	Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 19f));
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            mMap.setMyLocationEnabled(true);
 
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-        nearbyWifiList.animate().translationY(-nearbyWifiList.getHeight());
+        nearbyWifiList.animate().translationY(-2000);
     }
 
 
@@ -329,20 +346,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
-                currentLocation = new LatLng(lo,la);
-                Log.i("Location","new Location"+currentLocation.toString());
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(la, lo)));
         }
     };
 
-    public void Homelocations() {
-        Intent i = new Intent(this, WirelessNetworkActivity.class);
+    public void switchToHomeLocations() {
+        Intent i = new Intent(this, DashboardActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
 
 
-        //finish();  //Kill the activity from which you will go to next activity
+        finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
 

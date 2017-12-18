@@ -1,14 +1,6 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-        config {
-            keyAlias 'MyAndroidKey'
-            keyPassword 'Haseto29'
-            storeFile file('C:/Users/Timo Hasenbichler/.android/release.keystore')
-            storePassword 'Haseto29'
-        }
-    }
     compileSdkVersion 25
     buildToolsVersion '26.0.2'
     defaultConfig {
@@ -33,16 +25,14 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    implementation 'com.android.support:appcompat-v7:25.3.1'
-    implementation 'com.android.support:design:25.3.1'
-    implementation 'com.google.android.gms:play-services-maps:11.0.4'
-    testImplementation 'junit:junit:4.12'
-    implementation 'com.android.support:cardview-v7:25.3.1'
-    implementation 'android.arch.persistence.room:runtime:1.0.0-alpha1'
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:design:25.3.1'
+    compile 'com.google.android.gms:play-services-maps:11.0.4'
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:cardview-v7:25.3.1'
+    compile 'android.arch.persistence.room:runtime:1.0.0-alpha1'
     annotationProcessor 'android.arch.persistence.room:compiler:1.0.0-alpha1'
-    testImplementation 'com.google.android.gms:play-services:11.6.0'
-    annotationProcessor 'com.google.android.gms:play-services:11.6.0'
 }
