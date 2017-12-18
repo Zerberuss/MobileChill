@@ -3,17 +3,17 @@
 
     <item
         android:id="@+id/navigation_dashboard"
-        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:icon="@android:drawable/ic_menu_mapmode"
         android:title="@string/title_dashboard" />
 
     <item
         android:id="@+id/navigation_home"
-        android:icon="@mipmap/ic_preference_wifi_grey"
+        android:icon="@drawable/ic_home_black_24dp"
         android:title="@string/title_activity_main" />
 
     <item
         android:id="@+id/navigation_notifications"
-        android:icon="@android:drawable/ic_menu_mapmode"
-        android:title="@string/title_HomeLocations" />
+        android:icon="@mipmap/ic_preference_wifi_grey"
+        android:title="@string/title_HomeLocation" />
 
 </menu>
