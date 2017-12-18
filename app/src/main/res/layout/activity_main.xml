@@ -31,7 +31,7 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
         <FrameLayout
             android:id="@+id/nearbyWifiList"
             android:layout_width="match_parent"
-            android:layout_height="392dp"
+            android:layout_height="400dp"
             android:layout_margin="30dp"
             android:visibility="visible">
 
@@ -187,11 +187,9 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                 android:id="@+id/addHomeButton"
                 android:layout_width="58dp"
                 android:layout_height="52dp"
-                android:layout_alignParentBottom="true"
-
                 android:layout_gravity="bottom|right"
                 android:layout_margin="30dp"
-                android:layout_marginBottom="-10dp"
+                android:layout_marginBottom="0dp"
                 android:clickable="true"
                 android:src="@android:drawable/ic_input_add"
                 app:elevation="20dp" />

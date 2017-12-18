@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -19,7 +18,6 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -31,21 +29,17 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
-import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.LocationDao;
+import net.sytes.schneider.mobilechill.database.LocationEntity;
 
 import java.util.Date;
 import java.util.List;
@@ -69,7 +63,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationDao locationDao;
     private Converters CONVERTER;
     private AppDatabase appDatabase;
-    private FusedLocationProviderClient mFusedLocationClient;
 
 
     //WifiManager mWifiManager;
@@ -113,7 +106,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                                 .translationY(-nearbyWifiList.getHeight());
                     }
                     */
-                    Homelocations();
+                    switchToHomeLocations();
                     return true;
 
                 case R.id.navigation_notifications:
@@ -198,12 +191,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         navigation.setSelectedItemId(R.id.navigation_dashboard);
 
-
         addHomeButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
+                if(nearbyWifiList.getTranslationY() == -2000 ) {
                     nearbyWifiList.animate()
-                            .translationY(+300);
+                            .translationY(300);
+                } else {
+                    nearbyWifiList.animate()
+                            .translationY(-2000);
                 }
             }
         });
@@ -289,7 +284,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-        nearbyWifiList.animate().translationY(-nearbyWifiList.getHeight());
+        nearbyWifiList.animate().translationY(-2000);
     }
 
 
@@ -351,7 +346,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-    public void Homelocations() {
+    public void switchToHomeLocations() {
         Intent i = new Intent(this, DashboardActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
