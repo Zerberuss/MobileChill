@@ -4,8 +4,6 @@ import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
 
-import net.sytes.schneider.mobilechill.database.Converter.Converters;
-
 import java.util.Date;
 
 /**
@@ -26,19 +24,20 @@ public class LocationEntity {
     private String name;
 
     //geolocation from google api
-
+    @ColumnInfo(name = "latidude")
+    private Double latidude;
+    @ColumnInfo(name = "longitude")
+    private Double longitude;
 
     //celltowerinformations
 
     //created
     @ColumnInfo(name = "created")
-    private long created;
-
-
+    private Date created;
 
     //modified
     @ColumnInfo(name = "modified")
-    private long modified;
+    private Date modified;
 
 
     //signalstrength
@@ -66,15 +65,13 @@ public class LocationEntity {
         this.name = name;
     }
 
-
-    public void setCreated(long created) {
+    public void setCreated(Date created) {
         this.created = created;
     }
 
-    public void setModified(long modified) {
+    public void setModified(Date modified) {
         this.modified = modified;
     }
-
 
     public int getSignalStrengthEnum() {
         return signalStrengthEnum;
@@ -92,14 +89,29 @@ public class LocationEntity {
         this.forceDisable = forceDisable;
     }
 
-    public long getCreated() {
+    public Date getCreated() {
         return created;
     }
 
-    public long getModified() {
+    public Date getModified() {
         return modified;
     }
 
+    public Double getLatidude() {
+        return latidude;
+    }
+
+    public void setLatidude(Double latidude) {
+        this.latidude = latidude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
 }
 
 
