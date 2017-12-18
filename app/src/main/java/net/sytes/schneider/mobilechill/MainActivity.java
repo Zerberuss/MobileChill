@@ -1,7 +1,6 @@
 package net.sytes.schneider.mobilechill;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,6 +17,7 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -128,7 +128,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
 
-    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -213,6 +212,21 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
+        //Check permissions and start Location Service
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            startService(new Intent(this, LocationService.class));
+
+        } else {
+            ActivityCompat.requestPermissions(this, new String[] {
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION },
+                    MY_PERMISSIONS_REQUEST_LOCATION);
+        }
+
 
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
@@ -265,15 +279,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng graz = new LatLng(47.074458, 15.438041);                 //	Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 19f));
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 return;
             }
             mMap.setMyLocationEnabled(true);
@@ -340,7 +347,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(la, lo)));
         }
     };
 
@@ -351,7 +358,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         unregisterReceiver(mLocationReceiver);
 
 
-        //finish();  //Kill the activity from which you will go to next activity
+        finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
 
