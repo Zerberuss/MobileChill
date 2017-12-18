@@ -1,30 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/container"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/framelayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="net.sytes.schneider.mobilechill.LocationActivity">
 
-    <LinearLayout
-        android:id="@+id/container"
+    <FrameLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-
-        android:orientation="vertical"
-        tools:context="net.sytes.schneider.mobilechill.LocationActivity">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <ListView
             android:id="@android:id/list"
             android:layout_width="match_parent"
-            android:layout_height="472dp" />
+            android:layout_height="match_parent"
+            android:layout_gravity="top" />
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_gravity="bottom">
+
 
             <Button
                 android:id="@+id/button_id1"
@@ -43,16 +46,14 @@
                 android:visibility="visible" />
         </LinearLayout>
 
-        <android.support.design.widget.BottomNavigationView
-            android:id="@+id/navigation"
-            android:layout_width="match_parent"
-            android:layout_height="59dp"
-            android:layout_gravity="bottom"
-            android:background="?android:attr/windowBackground"
-            app:menu="@menu/navigation">
 
-        </android.support.design.widget.BottomNavigationView>
+    </FrameLayout>
 
-
-    </LinearLayout>
-</FrameLayout>
+    <android.support.design.widget.BottomNavigationView
+    android:id="@+id/navigation"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:background="?android:attr/windowBackground"
+    app:menu="@menu/navigation" />
+</LinearLayout>
