@@ -1,8 +1,10 @@
 package net.sytes.schneider.mobilechill;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -20,6 +22,7 @@ public class LocationService extends Service {
     static final String ACTION_TAG = "LocationService";
     private static final int LOCATION_INTERVAL = 100;
     private static final float LOCATION_DISTANCE = 0;
+    static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
     private LocationManager mLocationManager = null;
 
@@ -46,13 +49,8 @@ public class LocationService extends Service {
 
             Log.e(TAG, "onLocationChanged: " + location);
 
-            checkForHomeConnection(location);
-
-            Intent newLocationIntent = new Intent(LocationService.ACTION_TAG);
-            newLocationIntent.putExtra("locationA", location.getAltitude());
-            newLocationIntent.putExtra("locationLo", location.getLongitude());
-            newLocationIntent.putExtra("locationLa", location.getLatitude());
-            sendBroadcast(newLocationIntent);
+            mLastLocation.set(location);
+            sendLocationBroadcast(location);
         }
 
         @Override
@@ -128,6 +126,25 @@ public class LocationService extends Service {
         }
     }
 
+    final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            Log.w(TAG, "New Location Info will be sent out..");
+            if (mLastLocation != null)
+                sendLocationBroadcast(mLastLocation);
+        }
+    };
+
+    void sendLocationBroadcast(Location location){
+        checkForHomeConnection(location);
+
+        Intent newLocationIntent = new Intent(LocationService.ACTION_TAG);
+        newLocationIntent.putExtra("locationA", location.getAltitude());
+        newLocationIntent.putExtra("locationLo", location.getLongitude());
+        newLocationIntent.putExtra("locationLa", location.getLatitude());
+        sendBroadcast(newLocationIntent);
+    }
+
     private void initializeLocationManager() {
         Log.e(TAG, "initializeLocationManager");
 
@@ -137,6 +154,8 @@ public class LocationService extends Service {
                         PackageManager.PERMISSION_GRANTED) {
             if (mLocationManager == null) {
                 mLocationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+                registerReceiver(mNewInfoScanReceiver,
+                        new IntentFilter(LocationService.ACTION_GET_NEW_LOCATION));
             }
         } else {
             Toast.makeText(this, "Please confirm location access!", Toast.LENGTH_LONG).show();
