@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
 import android.content.Intent;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -18,6 +19,7 @@ import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -27,7 +29,8 @@ import java.util.List;
 public class LocationActivity extends ListActivity {
 
     private AppDatabase appDatabase;
-
+    private LocationService locationService;
+    private FusedLocationProviderClient mFusedLocationClient;
 
     private List<LocationEntity> locationEntities;
 
@@ -46,8 +49,7 @@ public class LocationActivity extends ListActivity {
 
 
 
-
-
+        final Button button1 = (Button) findViewById(R.id.button_id1);
         final Button button = (Button) findViewById(R.id.button_id);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -66,6 +68,22 @@ public class LocationActivity extends ListActivity {
 
             }
         });
+        button1.setOnClickListener(c -> {
+
+            LocationServices
+            LocationEntity locationEntity = new LocationEntity();
+            Date today = new Date();
+            locationEntity.setCreated(today);
+            locationEntity.setModified(today);
+            locationEntity.setName("Home1");
+
+
+
+
+
+        });
+
+
     }
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener

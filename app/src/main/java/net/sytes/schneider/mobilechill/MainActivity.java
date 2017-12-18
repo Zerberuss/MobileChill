@@ -15,7 +15,9 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -346,12 +348,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
+                Log.i("location",lo+" "+la);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(la, lo)));
         }
     };
 
     public void switchToHomeLocations() {
-        Intent i = new Intent(this, DashboardActivity.class);
+        Intent i = new Intent(this, WirelessNetworkActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
