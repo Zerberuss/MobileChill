@@ -16,12 +16,14 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -55,10 +57,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     private TextView mTextMessage;
-    private FrameLayout dashboard;
-    private FrameLayout notifications;
+    private FrameLayout nearbyWifiList;
+    private FloatingActionButton addHomeButton;
     private ImageView wifiStatus;
-    private TextView wifiDescribtion;
+    private TextView wifiDescription;
     private Switch wifiSwitch;
     private Switch locationTrackingSwitch;
     private TextView wifiDetailsTxt;
@@ -72,7 +74,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     List<ScanResult> mScanResults;
 
     private WifiManager mWifiManager;
-    private LocationService mLocationService;
+
 
     private LatLng currentLocation;
 
@@ -83,44 +85,47 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    mTextMessage.setText(R.string.title_activity_main);
-                    if (notifications.getTranslationY() == 0) {
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    if (dashboard.getTranslationY() == 0) {
-                        dashboard.animate()
-                                .translationY(-dashboard.getHeight());
-                    }
-                    return true;
-
 
                 case R.id.navigation_dashboard:
                     mTextMessage.setText(R.string.title_dashboard);
-                    if (dashboard.getTranslationY() == -dashboard.getHeight()) {
-                        dashboard.animate()
+                    /*
+                    if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
+                        nearbyWifiList.animate()
                                 .translationY(0);
                     }
-                    if (notifications.getTranslationY() == 0) {
+                    if(notifications.getTranslationY() == 0 ){
                         notifications.animate()
                                 .translationY(-notifications.getHeight());
                     }
-
-                    startDashboard();
-
-
+                    */
                     return true;
+
+                case R.id.navigation_home:
+                    mTextMessage.setText(R.string.title_activity_main);
+                    /*
+                    if(notifications.getTranslationY() == 0 ){
+                        notifications.animate()
+                                .translationY(-notifications.getHeight());
+                    }
+                    if(nearbyWifiList.getTranslationY() == 0 ){
+                        nearbyWifiList.animate()
+                                .translationY(-nearbyWifiList.getHeight());
+                    }
+                    */
+                    Homelocations();
+                    return true;
+
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
-                    if (notifications.getTranslationY() == -notifications.getHeight()) {
+                    /*
+                    if(notifications.getTranslationY() == -notifications.getHeight() ){
                         notifications.animate()
                                 .translationY(0);
                     }
-                    if (dashboard.getTranslationY() == 0) {
-                        dashboard.animate()
-                                .translationY(-dashboard.getHeight());
-                    }
+                    if(nearbyWifiList.getTranslationY() == 0 ){
+                        nearbyWifiList.animate()
+                                .translationY(-nearbyWifiList.getHeight());
+                    }*/
                     return true;
             }
             return false;
@@ -175,10 +180,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
          */
 
         mTextMessage = (TextView) findViewById(R.id.message);
-        dashboard = (FrameLayout) findViewById(R.id.dashboard);
-        notifications = (FrameLayout) findViewById(R.id.notifications);
+        nearbyWifiList = (FrameLayout) findViewById(R.id.nearbyWifiList);
+        addHomeButton = (FloatingActionButton) findViewById(R.id.addHomeButton);
         wifiStatus = (ImageView) findViewById(R.id.wifistatus);
-        wifiDescribtion = (TextView) findViewById(R.id.wifidescribtion);
+        wifiDescription = (TextView) findViewById(R.id.wifidescribtion);
         wifiDetailsTxt = (TextView) findViewById(R.id.wifidetails);
         wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
@@ -188,7 +193,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        navigation.setSelectedItemId(R.id.navigation_dashboard);
 
+
+        addHomeButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
+                    nearbyWifiList.animate()
+                            .translationY(+300);
+                }
+            }
+        });
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.«
         if (mMap == null) {
@@ -218,10 +233,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     mWifiManager.setWifiEnabled(true);
-                    wifiDescribtion.setText("connecting");
-                } else {
+                    wifiDescription.setText("connecting");
+                }
+                else {
                     mWifiManager.setWifiEnabled(false);
-                    wifiDescribtion.setText("Chilling\nturned off");
+                    wifiDescription.setText("Chilling\nturned off");
                 }
             }
         });
@@ -231,7 +247,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         mWifiManager.startScan();
-
 
         registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
 
@@ -262,23 +277,23 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-        dashboard.animate().translationY(-dashboard.getHeight());
-        notifications.animate().translationY(-notifications.getHeight());
+        nearbyWifiList.animate().translationY(-nearbyWifiList.getHeight());
     }
 
 
-    public String wifiDetails(List<ScanResult> wifiList) {
-        String wifiTxt = "Found " + wifiList.size() + " WIFIs:";
+    public String wifiDetails(List<ScanResult> wifiList){
+        String wifiTxt = "Add one of these " + wifiList.size() + " WIFI(s):";
 
         for (ScanResult wifi : wifiList) {
             wifiTxt += "\n";
 
-            wifiTxt += "\nSSID:  " + wifi.SSID;
-            wifiTxt += "\nBSSID  " + wifi.BSSID;
+            wifiTxt += "\n " + wifi.SSID;
+            /*wifiTxt += "\nBSSID  " + wifi.BSSID;
             wifiTxt += "\nfrequency  " + wifi.frequency;
             wifiTxt += "\nlevel:  " + wifi.level;
             wifiTxt += "\ncapabilities  " + wifi.capabilities;
             wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
+            */
         }
 
         wifiDetailsTxt.setText(wifiTxt);
@@ -297,11 +312,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
                 NetworkInfo netInfo = cm.getActiveNetworkInfo();
                 if (netInfo != null && netInfo.isConnected())
-                    wifiDescribtion.setText(mWifiManager.getConnectionInfo().getSSID());
+                    wifiDescription.setText(mWifiManager.getConnectionInfo().getSSID());
                 else if (netInfo != null && netInfo.isConnectedOrConnecting())
-                    wifiDescribtion.setText("connecting");
+                    wifiDescription.setText("connecting");
                 else
-                    wifiDescribtion.setText("no connection");
+                    wifiDescription.setText("no connection");
 
 
                 Log.i("MainActivity", "New Wifi Scan!\n");
@@ -326,14 +341,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-    public void startDashboard() {
+    public void Homelocations() {
         Intent i = new Intent(this, DashboardActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
 
 
-        finish();  //Kill the activity from which you will go to next activity
+        //finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
 
