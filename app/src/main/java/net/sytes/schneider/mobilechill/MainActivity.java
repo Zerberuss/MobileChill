@@ -29,8 +29,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -67,7 +66,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationDao locationDao;
     private Converters CONVERTER;
     private AppDatabase appDatabase;
-    private FusedLocationProviderClient mFusedLocationClient;
 
 
     //WifiManager mWifiManager;
@@ -76,6 +74,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private WifiManager mWifiManager;
     private LocationService mLocationService;
 
+    private LatLng currentLocation;
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -137,7 +136,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        appDatabase = Room.databaseBuilder(getApplicationContext(),
+                AppDatabase.class, "app-database").allowMainThreadQueries().build();
+       //appDatabase = Room.databaseBuilder(getApplicationContext(),AppDatabase.class, "app-database").build();
 
         /*
 
@@ -146,9 +147,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
          */
         //create DB
-        appDatabase = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "app-database").allowMainThreadQueries().build();
-        /*mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+       /* mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         Task<Location> myLocTask = mFusedLocationClient.getLastLocation();
 
@@ -162,14 +162,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         LocationEntity testLoc = new LocationEntity();
         testLoc.setName("Graz");
 
-        System.out.print(today);
-
-
         appDatabase.locationsDao().insertLocation(testLoc);
         System.out.print("LocationEntity has been added to DB");
-        Log.d("INFO", "LocationEntity has been added");
+        Log.i("INFO", "LocationEntity has been added");
         List<LocationEntity> locationEntityList = appDatabase.locationsDao().getAllLocations();
-        Log.d("INFO", locationEntityList.toString());
+        Log.i("INFO", locationEntityList.toString());
 
         /*
 
@@ -237,6 +234,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         registerReceiver( mLocationReceiver, new IntentFilter(LocationService.ACTION_TAG));
+
     }
 
 
@@ -249,6 +247,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+    @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -258,17 +257,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 12.0f));
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            mMap.setMyLocationEnabled(true);
 
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
@@ -332,6 +320,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked())
+                currentLocation = new LatLng(lo,la);
+                Log.i("Location","new Location"+currentLocation.toString());
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lo, la)));
         }
     };
