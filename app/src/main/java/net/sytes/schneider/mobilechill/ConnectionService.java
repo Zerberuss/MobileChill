@@ -16,7 +16,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.security.AccessControlException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -28,7 +27,7 @@ public class ConnectionService extends Service {
     private WifiManager mWifiManager = null;
     private String wifiConnection = "";
     private String wifiDetailsStr = "";
-    private ArrayList wifiSSIDList = new ArrayList();
+    private String wifiSSIDList = "";
 
 
     @Override
@@ -92,15 +91,18 @@ public class ConnectionService extends Service {
 
     public void saveWifiDetails(List<ScanResult> wifiList){
         String wifiTxt = null;
+        StringBuilder ssids = new StringBuilder();
+
         if(wifiList.size()>1) {
             wifiTxt = "There are " + wifiList.size() + " WIFIs available:";
-            wifiSSIDList.clear();
+            ssids.append(wifiTxt).append("\n");
         }
-        else
+        else {
             wifiTxt = "There is " + "one" + " WIFI available:";
-
+            ssids.append(wifiTxt).append("\n");
+        }
         for (ScanResult wifi : wifiList) {
-            wifiSSIDList.add(wifi.SSID);
+            ssids.append("\n   ").append(wifi.SSID);
 
             wifiTxt += "\n";
             wifiTxt += "\n " + wifi.SSID;
@@ -111,6 +113,7 @@ public class ConnectionService extends Service {
             wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
         }
         wifiDetailsStr = wifiTxt;
+        wifiSSIDList = ssids.toString();
     }
 
     private void initializeConnectionManager() {
