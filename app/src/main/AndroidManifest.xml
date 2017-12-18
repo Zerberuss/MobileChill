@@ -49,6 +49,11 @@
             android:label="@string/app_name">
         </activity>
 
+        <activity
+            android:name=".ConnectionsActivity" >
+            android:label="@string/app_name">
+        </activity>
+
         <service android:name=".LocationService" android:process=":location_service" />
 
     </application>

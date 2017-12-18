@@ -82,44 +82,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 case R.id.navigation_dashboard:
                     mTextMessage.setText(R.string.title_dashboard);
-                    /*
-                    if(nearbyWifiList.getTranslationY() == -nearbyWifiList.getHeight() ) {
-                        nearbyWifiList.animate()
-                                .translationY(0);
-                    }
-                    if(notifications.getTranslationY() == 0 ){
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    */
                     return true;
 
                 case R.id.navigation_home:
                     mTextMessage.setText(R.string.title_activity_main);
-                    /*
-                    if(notifications.getTranslationY() == 0 ){
-                        notifications.animate()
-                                .translationY(-notifications.getHeight());
-                    }
-                    if(nearbyWifiList.getTranslationY() == 0 ){
-                        nearbyWifiList.animate()
-                                .translationY(-nearbyWifiList.getHeight());
-                    }
-                    */
                     switchToHomeLocations();
                     return true;
 
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
-                    /*
-                    if(notifications.getTranslationY() == -notifications.getHeight() ){
-                        notifications.animate()
-                                .translationY(0);
-                    }
-                    if(nearbyWifiList.getTranslationY() == 0 ){
-                        nearbyWifiList.animate()
-                                .translationY(-nearbyWifiList.getHeight());
-                    }*/
+                    switchToConnections();
                     return true;
             }
             return false;
@@ -353,6 +325,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void switchToHomeLocations() {
         Intent i = new Intent(this, DashboardActivity.class);
+
+        unregisterReceiver(mWifiScanReceiver);
+        unregisterReceiver(mLocationReceiver);
+
+
+        finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
+    }
+
+    public void switchToConnections() {
+        Intent i = new Intent(this, ConnectionsActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
