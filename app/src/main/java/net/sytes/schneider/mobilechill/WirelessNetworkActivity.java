@@ -11,11 +11,13 @@ import android.widget.FrameLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import net.sytes.schneider.mobilechill.database.WirelessNetwork;
+
 /**
  * Created by andi on 08/11/2017.
  */
 
-public class DashboardActivity extends Activity {
+public class WirelessNetworkActivity extends Activity {
     TextView mTextMessage;
     View notifications;
     View dashboard;
@@ -25,7 +27,7 @@ public class DashboardActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_dashboard);
+        setContentView(R.layout.activity_wirelessnetwork);
 
 
         mTextMessage = (TextView) findViewById(R.id.message);
@@ -39,37 +41,33 @@ public class DashboardActivity extends Activity {
     }
 
 
+    //Navigation
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-        //Navigation
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.navigation_dashboard:
-                    startMainActivity();
-                    return true;
+            = item -> {
+                Intent i;
+                switch (item.getItemId()) {
+                    case R.id.navigation_dashboard:
+                        i = new Intent(getApplicationContext(), WirelessNetworkActivity.class);
+                        startActivity(i);
+                        return true;
 
-                case R.id.navigation_home:
-                    return true;
+                    case R.id.navigation_home:
+                        i = new Intent(getApplicationContext(), MainActivity.class);
+                        startActivity(i);
+                        return true;
 
-                case R.id.navigation_notifications:
-                    return true;
-            }
-            return false;
-        }
-
-
-    };
-
-
+                    case R.id.navigation_notifications:
+                        i = new Intent(getApplicationContext(), LocationActivity.class);
+                        startActivity(i);
+                        return true;
+                }
+                return false;
+            };
 
 
-    public void startMainActivity() {
 
-        Intent i = new Intent(this, MainActivity.class);
-        finish();  //Kill the activity from which you will go to next activity
-        startActivity(i);
-    }
+
+
 
 
 }

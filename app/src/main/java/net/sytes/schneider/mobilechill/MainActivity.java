@@ -1,14 +1,11 @@
 package net.sytes.schneider.mobilechill;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
@@ -17,9 +14,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
@@ -38,8 +33,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
@@ -116,7 +109,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     return true;
 
                 case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
+                    mTextMessage.setText(R.string.title_HomeLocation);
                     /*
                     if(notifications.getTranslationY() == -notifications.getHeight() ){
                         notifications.animate()
@@ -126,6 +119,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         nearbyWifiList.animate()
                                 .translationY(-nearbyWifiList.getHeight());
                     }*/
+                    HomeNotifications();
                     return true;
             }
             return false;
@@ -342,13 +336,19 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     public void Homelocations() {
-        Intent i = new Intent(this, DashboardActivity.class);
+        Intent i = new Intent(this, WirelessNetworkActivity.class);
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
 
 
         //finish();  //Kill the activity from which you will go to next activity
+        startActivity(i);
+    }
+
+    public void HomeNotifications(){
+        Intent i = new Intent(this, LocationActivity.class);
+
         startActivity(i);
     }
 
