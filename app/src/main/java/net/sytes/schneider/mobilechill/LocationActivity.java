@@ -96,23 +96,15 @@ public class LocationActivity extends ListActivity {
             mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
                 @Override
                 public void onSuccess(Location location) {
+                    Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+
                     // Got last known location. In some rare situations this can be null.
-                    if (location != null) {
-                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+                    if (location != null ) {
                         LocationEntity locationEntity = locationConverter.convert2LocationEntity(location,geocoder);
 
 
                         //locationEntities = appDatabase.locationsDao().getAllLocations();
 
-
-                        if(locationRangeCheck(location)){
-
-                            //Turn off Wlan
-
-
-                        } else {
-                            //Turn on Wlan
-                        }
 
                         //calc from lat and long
 
