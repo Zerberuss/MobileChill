@@ -45,7 +45,7 @@ public class LocationActivity extends ListActivity {
     private FusedLocationProviderClient mFusedLocationClient;
 
     private List<LocationEntity> locationEntities;
-    private LocationConverter locationConverter;
+    private LocationConverter locationConverter = new LocationConverter();
 
 
     @Override
