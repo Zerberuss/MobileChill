@@ -25,6 +25,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
+import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ public class LocationActivity extends ListActivity {
     private FusedLocationProviderClient mFusedLocationClient;
 
     private List<LocationEntity> locationEntities;
+    private LocationConverter locationConverter;
 
 
     @Override
@@ -96,27 +98,27 @@ public class LocationActivity extends ListActivity {
                 public void onSuccess(Location location) {
                     // Got last known location. In some rare situations this can be null.
                     if (location != null) {
-                        Date today = new Date();
+                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+                        LocationEntity locationEntity = locationConverter.convert2LocationEntity(location,geocoder);
+
+
+                        //locationEntities = appDatabase.locationsDao().getAllLocations();
+
+
+                        if(locationRangeCheck(location)){
+
+                            //Turn off Wlan
+
+
+                        } else {
+                            //Turn on Wlan
+                        }
 
                         //calc from lat and long
-                        locationEntity.setName("Home1");
-                        locationEntity.setCreated(today);
-                        locationEntity.setModified(today);
-                        locationEntity.setLatidude(location.getLatitude());
-                        locationEntity.setLongitude(location.getLongitude());
 
-                        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-                        try {
-                            List<Address> list = geocoder.getFromLocation(locationEntity.getLatidude(), locationEntity.getLongitude(), 1);
-                            if (null != list & list.size() > 0) {
-                                String name = list.get(0).getCountryName();
-                                Log.i("my location", name);
-                                locationEntity.setName(name);
-                            }
 
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+
+
 
                         //if not in db
                         if (!checkIfinDatabase(locationEntity)) {
@@ -142,8 +144,34 @@ public class LocationActivity extends ListActivity {
 
         });
 
+    }
+
+
+    public boolean locationRangeCheck(Location newLocation){
+        locationEntities = appDatabase.locationsDao().getAllLocations();
+
+        if(locationEntities != null && locationEntities.size() > 0){
+
+            for(LocationEntity e : locationEntities){
+                Location locationInDB = locationConverter.convert2Location(e);
+                float distanceInMeters = locationInDB.distanceTo(newLocation);
+                boolean result= distanceInMeters<300;
+                if(result){
+                    return true;
+                }
+            }
+        }
+
+
+
+        return false;
+
 
     }
+
+
+
+
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
