@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/locationNameTextView"
+        android:layout_width="20dp"
+        android:layout_height="fill_parent"
+        android:layout_weight="2"
+        android:gravity="center_vertical"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <ImageButton
+        android:id="@+id/remove_btn_id"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:onClick="removeLocationFromList"
+        android:src="@drawable/ic_dialog_close_light" />
+
+</LinearLayout>

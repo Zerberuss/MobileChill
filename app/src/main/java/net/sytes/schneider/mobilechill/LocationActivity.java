@@ -3,6 +3,7 @@ package net.sytes.schneider.mobilechill;
 import android.annotation.SuppressLint;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -11,13 +12,21 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.text.Layout;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -40,13 +49,40 @@ import java.util.Locale;
 
 public class LocationActivity extends ListActivity {
 
+    public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        //Navigation
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
+            switch (item.getItemId()) {
+
+                case R.id.navigation_dashboard:
+                    Intent y = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(y);
+                    return true;
+
+                case R.id.navigation_home:
+                    Intent x = new Intent(getApplicationContext(), LocationActivity.class);
+                    startActivity(x);
+
+                    return true;
+
+                case R.id.navigation_notifications:
+                    Intent i = new Intent(getApplicationContext(), ConnectionsActivity.class);
+                    startActivity(i);
+                    return true;
+            }
+            return false;
+        }
+
+    };
     private AppDatabase appDatabase;
     private LocationService locationService;
     private FusedLocationProviderClient mFusedLocationClient;
-
     private List<LocationEntity> locationEntities;
     private LocationConverter locationConverter = new LocationConverter();
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,12 +103,18 @@ public class LocationActivity extends ListActivity {
                 //Execute on main thread
 
                 locationEntities = appDatabase.locationsDao().getAllLocations();
-                List<String> arrOfLoc = new ArrayList<>();
+                /*List<String> arrOfLoc = new ArrayList<>();
                 locationEntities.forEach(e -> {
                     String tempStr = e.getName() + " " + e.getLatidude() + " " + e.getLongitude();
                     arrOfLoc.add(tempStr);
-                });
-                ArrayAdapter<String> adapter = new ArrayAdapter<String>(getListView().getContext(), android.R.layout.simple_expandable_list_item_1, arrOfLoc);
+                });*/
+
+                LocationListAdapter adapter = new LocationListAdapter(LocationActivity.this,R.layout.location_list_item,locationEntities);
+
+                //ArrayAdapter<String> adapter = new ArrayAdapter<String>((getListView().getContext(), android.R.layout.simple_expandable_list_item_1, arrOfLoc);
+                //ListView locationListView = (ListView) findViewById(R.id.locationListView);
+               /// locationListView.setAdapter(adapter);
+
                 getListView().setAdapter(adapter);
                 Log.i("Info", locationEntities.toString());
 
@@ -99,17 +141,14 @@ public class LocationActivity extends ListActivity {
                     Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
 
                     // Got last known location. In some rare situations this can be null.
-                    if (location != null ) {
-                        LocationEntity locationEntity = locationConverter.convert2LocationEntity(location,geocoder);
+                    if (location != null) {
+                        LocationEntity locationEntity = locationConverter.convert2LocationEntity(location, geocoder);
 
 
                         //locationEntities = appDatabase.locationsDao().getAllLocations();
 
 
                         //calc from lat and long
-
-
-
 
 
                         //if not in db
@@ -124,36 +163,33 @@ public class LocationActivity extends ListActivity {
 
                         //set force disable
                         Log.i("MY CURRENT LOCATION", "LAT=" + location.getLatitude() + "  LONG=" + location.getLongitude());
+                        Log.i("Setting up popup", "");
+
+                        Snackbar.make(findViewById(R.id.container), "New Location saved.",
+                                Snackbar.LENGTH_SHORT)
+                                .show();
+
                     }
                 }
             });
-
-
-
-
-
-
-
         });
 
     }
 
-
-    public boolean locationRangeCheck(Location newLocation){
+    public boolean locationRangeCheck(Location newLocation) {
         locationEntities = appDatabase.locationsDao().getAllLocations();
 
-        if(locationEntities != null && locationEntities.size() > 0){
+        if (locationEntities != null && locationEntities.size() > 0) {
 
-            for(LocationEntity e : locationEntities){
+            for (LocationEntity e : locationEntities) {
                 Location locationInDB = locationConverter.convert2Location(e);
                 float distanceInMeters = locationInDB.distanceTo(newLocation);
-                boolean result= distanceInMeters<300;
-                if(result){
+                boolean result = distanceInMeters < 300;
+                if (result) {
                     return true;
                 }
             }
         }
-
 
 
         return false;
@@ -161,55 +197,26 @@ public class LocationActivity extends ListActivity {
 
     }
 
-
-
-
-
-    public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        //Navigation
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-
-            switch (item.getItemId()) {
-
-                case R.id.navigation_dashboard:
-                    Intent y = new Intent(getApplicationContext() , MainActivity.class);
-                    startActivity(y);
-                    return true;
-
-                case R.id.navigation_home:
-                    Intent x = new Intent(getApplicationContext() , LocationActivity.class);
-                    startActivity(x);
-
-                    return true;
-
-                case R.id.navigation_notifications:
-                    Intent i = new Intent(getApplicationContext() , ConnectionsActivity.class);
-                    startActivity(i);
-                    return true;
-            }
-            return false;
-        }
-
-    };
-
-    public List<LocationEntity> getLocations(){
+    public List<LocationEntity> getLocations() {
         new DatabaseAsync().execute();
         return locationEntities;
     }
 
 
-    private boolean checkIfinDatabase(LocationEntity locationEntity){
+    private boolean checkIfinDatabase(LocationEntity locationEntity) {
 
-        List<LocationEntity> list = appDatabase.locationsDao().checkIfinDB(locationEntity.getLatidude(),locationEntity.getLongitude());
-        if(list==null || list.size()==0){
+        List<LocationEntity> list = appDatabase.locationsDao().checkIfinDB(locationEntity.getLatidude(), locationEntity.getLongitude());
+        if (list == null || list.size() == 0) {
 
             //if it is not in list return false
             return false;
         }
         return true;
+    }
+
+    public void removeLocationFromList(View view) {
+        LocationEntity itemToRemove = (LocationEntity) view.getTag();
+
     }
 
 
@@ -232,9 +239,28 @@ public class LocationActivity extends ListActivity {
         }
 
 
-
+    }
+/*
+private class MyListAdapter extends ArrayAdapter<String>{
+    private int layout;
+    public MyListAdapter(@NonNull Context context, int resource, @NonNull List<String> objects) {
+        super(context, resource, objects);
+        layout = resource;
     }
 
+    @NonNull
+    @Override
+    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+        if(convertView == null){
+            LayoutInflater inflater = LayoutInflater.from(getContext());
+            convertView = inflater.inflate(layout,parent,false);
+        }
+
+
+        return super.getView(position, convertView, parent);
+    }
+}
+*/
 
 
 }
