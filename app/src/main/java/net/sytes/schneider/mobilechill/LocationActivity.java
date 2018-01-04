@@ -22,11 +22,13 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -83,7 +85,7 @@ public class LocationActivity extends ListActivity {
     private FusedLocationProviderClient mFusedLocationClient;
     private List<LocationEntity> locationEntities;
     private LocationConverter locationConverter = new LocationConverter();
-
+    private LocationListAdapter adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,13 +111,22 @@ public class LocationActivity extends ListActivity {
                     arrOfLoc.add(tempStr);
                 });*/
 
-                LocationListAdapter adapter = new LocationListAdapter(LocationActivity.this,R.layout.location_list_item,locationEntities);
+               adapter = new LocationListAdapter(LocationActivity.this,R.layout.location_list_item, locationEntities);
 
                 //ArrayAdapter<String> adapter = new ArrayAdapter<String>((getListView().getContext(), android.R.layout.simple_expandable_list_item_1, arrOfLoc);
                 //ListView locationListView = (ListView) findViewById(R.id.locationListView);
                /// locationListView.setAdapter(adapter);
 
-                getListView().setAdapter(adapter);
+                ListView listView = (ListView) findViewById(android.R.id.list);
+
+
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        Toast.makeText(LocationActivity.this,"Remove item: ", Toast.LENGTH_LONG);
+                    }
+                });
+                listView.setAdapter(adapter);
                 Log.i("Info", locationEntities.toString());
 
 
@@ -144,13 +155,6 @@ public class LocationActivity extends ListActivity {
                     if (location != null) {
                         LocationEntity locationEntity = locationConverter.convert2LocationEntity(location, geocoder);
 
-
-                        //locationEntities = appDatabase.locationsDao().getAllLocations();
-
-
-                        //calc from lat and long
-
-
                         //if not in db
                         if (!checkIfinDatabase(locationEntity)) {
                             appDatabase.locationsDao().insertLocation(locationEntity);
@@ -159,7 +163,6 @@ public class LocationActivity extends ListActivity {
 
                             Log.i("DUPLICATE", "ALREADY IN DB");
                         }
-
 
                         //set force disable
                         Log.i("MY CURRENT LOCATION", "LAT=" + location.getLatitude() + "  LONG=" + location.getLongitude());
@@ -214,9 +217,18 @@ public class LocationActivity extends ListActivity {
         return true;
     }
 
-    public void removeLocationFromList(View view) {
+    public void removeLocationOnClickHandler(View view) {
         LocationEntity itemToRemove = (LocationEntity) view.getTag();
+        if(itemToRemove !=null) {
+            Log.i("---REMOVE--- ", itemToRemove.getDisplayName());
+            appDatabase.locationsDao().deleteLocation(itemToRemove);
 
+
+        }
+        else {
+            Log.i("THIS SHIT IS NULL","FEELSBAD");
+        }
+        adapter.remove(itemToRemove);
     }
 
 
@@ -232,35 +244,19 @@ public class LocationActivity extends ListActivity {
 
         @Override
         protected List<LocationEntity> doInBackground(Void... voids) {
-            //Let's add some dummy data to the database.
-
             return appDatabase.locationsDao().getAllLocations();
-
         }
 
 
     }
-/*
-private class MyListAdapter extends ArrayAdapter<String>{
-    private int layout;
-    public MyListAdapter(@NonNull Context context, int resource, @NonNull List<String> objects) {
-        super(context, resource, objects);
-        layout = resource;
-    }
 
-    @NonNull
-    @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        if(convertView == null){
-            LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(layout,parent,false);
-        }
+    public void removeListEntry(View view){
+        ImageButton bt=(ImageButton)view;
+        LocationEntity item2remove = (LocationEntity) bt.getTag();
 
-
-        return super.getView(position, convertView, parent);
-    }
+    Toast.makeText(this, "Button "+bt.getTag().toString(),Toast.LENGTH_LONG).show();
+    appDatabase.locationsDao().deleteLocation(item2remove);
+    adapter.remove(item2remove);
 }
-*/
-
 
 }
