@@ -1,49 +1,42 @@
 package net.sytes.schneider.mobilechill;
 
-import android.annotation.SuppressLint;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.text.Layout;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
+import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
+import net.sytes.schneider.mobilechill.database.Tasks.RemoveLocationTask;
+import net.sytes.schneider.mobilechill.database.Tasks.UpdateLocationTask;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by Timo Hasenbichler on 18.12.2017.
@@ -83,9 +76,10 @@ public class LocationActivity extends ListActivity {
     private AppDatabase appDatabase;
     private LocationService locationService;
     private FusedLocationProviderClient mFusedLocationClient;
-    private List<LocationEntity> locationEntities;
+    private List<LocationEntity> locationEntityList;
     private LocationConverter locationConverter = new LocationConverter();
     private LocationListAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,55 +89,47 @@ public class LocationActivity extends ListActivity {
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "app-database").allowMainThreadQueries().build();
+                AppDatabase.class, "app-database").build();
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-
-        final Button button1 = (Button) findViewById(R.id.button_id1);
+        final Button saveBtn = (Button) findViewById(R.id.button_id1);
         final Button button = (Button) findViewById(R.id.button_id);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //Execute on main thread
-
-                locationEntities = appDatabase.locationsDao().getAllLocations();
-                /*List<String> arrOfLoc = new ArrayList<>();
-                locationEntities.forEach(e -> {
-                    String tempStr = e.getName() + " " + e.getLatidude() + " " + e.getLongitude();
-                    arrOfLoc.add(tempStr);
-                });*/
-
-               adapter = new LocationListAdapter(LocationActivity.this,R.layout.location_list_item, locationEntities);
-
-                //ArrayAdapter<String> adapter = new ArrayAdapter<String>((getListView().getContext(), android.R.layout.simple_expandable_list_item_1, arrOfLoc);
-                //ListView locationListView = (ListView) findViewById(R.id.locationListView);
-               /// locationListView.setAdapter(adapter);
-
+                adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
+                //refresh
+                try {
+                    locationEntityList = new GetLocationsTask().execute(holderClass).get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
                 ListView listView = (ListView) findViewById(android.R.id.list);
 
 
                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        Toast.makeText(LocationActivity.this,"Remove item: ", Toast.LENGTH_LONG);
+                        Toast.makeText(LocationActivity.this, "location deleted", Toast.LENGTH_LONG);
                     }
                 });
                 listView.setAdapter(adapter);
-                Log.i("Info", locationEntities.toString());
-
-
             }
         });
-        button1.setOnClickListener(c -> {
+        saveBtn.setOnClickListener(c -> {
 
             LocationEntity locationEntity = new LocationEntity();
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 return;
             }
             mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -157,16 +143,11 @@ public class LocationActivity extends ListActivity {
 
                         //if not in db
                         if (!checkIfinDatabase(locationEntity)) {
-                            appDatabase.locationsDao().insertLocation(locationEntity);
-
-                        } else {
-
-                            Log.i("DUPLICATE", "ALREADY IN DB");
+                            holderClass.locationEntity = locationEntity;
+                            holderClass.appDatabase = appDatabase;
+                            insertLocationEntity(holderClass);
                         }
 
-                        //set force disable
-                        Log.i("MY CURRENT LOCATION", "LAT=" + location.getLatitude() + "  LONG=" + location.getLongitude());
-                        Log.i("Setting up popup", "");
 
                         Snackbar.make(findViewById(R.id.container), "New Location saved.",
                                 Snackbar.LENGTH_SHORT)
@@ -180,15 +161,14 @@ public class LocationActivity extends ListActivity {
     }
 
     public boolean locationRangeCheck(Location newLocation) {
-        locationEntities = appDatabase.locationsDao().getAllLocations();
+        if (locationEntityList != null && locationEntityList.size() > 0) {
 
-        if (locationEntities != null && locationEntities.size() > 0) {
-
-            for (LocationEntity e : locationEntities) {
+            for (LocationEntity e : locationEntityList) {
                 Location locationInDB = locationConverter.convert2Location(e);
                 float distanceInMeters = locationInDB.distanceTo(newLocation);
                 boolean result = distanceInMeters < 300;
                 if (result) {
+                    Log.i("INFO", "IN RANGE");
                     return true;
                 }
             }
@@ -200,14 +180,10 @@ public class LocationActivity extends ListActivity {
 
     }
 
-    public List<LocationEntity> getLocations() {
-        new DatabaseAsync().execute();
-        return locationEntities;
-    }
-
 
     private boolean checkIfinDatabase(LocationEntity locationEntity) {
-
+        //locationEntityList
+        //TODO
         List<LocationEntity> list = appDatabase.locationsDao().checkIfinDB(locationEntity.getLatidude(), locationEntity.getLongitude());
         if (list == null || list.size() == 0) {
 
@@ -217,46 +193,59 @@ public class LocationActivity extends ListActivity {
         return true;
     }
 
-    public void removeLocationOnClickHandler(View view) {
-        LocationEntity itemToRemove = (LocationEntity) view.getTag();
-        if(itemToRemove !=null) {
-            Log.i("---REMOVE--- ", itemToRemove.getDisplayName());
-            appDatabase.locationsDao().deleteLocation(itemToRemove);
 
-
-        }
-        else {
-            Log.i("THIS SHIT IS NULL","FEELSBAD");
-        }
-        adapter.remove(itemToRemove);
-    }
-
-
-    @SuppressLint("StaticFieldLeak")
-    final private class DatabaseAsync extends AsyncTask<Void, Void, List<LocationEntity>> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            //Perform pre-adding operation here.
-        }
-
-        @Override
-        protected List<LocationEntity> doInBackground(Void... voids) {
-            return appDatabase.locationsDao().getAllLocations();
-        }
-
-
-    }
-
-    public void removeListEntry(View view){
-        ImageButton bt=(ImageButton)view;
+    public void removeListEntry(View view) {
+        ImageButton bt = (ImageButton) view;
         LocationEntity item2remove = (LocationEntity) bt.getTag();
 
-    Toast.makeText(this, "Button "+bt.getTag().toString(),Toast.LENGTH_LONG).show();
-    appDatabase.locationsDao().deleteLocation(item2remove);
-    adapter.remove(item2remove);
-}
+        Toast.makeText(this, "Button " + bt.getTag().toString(), Toast.LENGTH_LONG).show();
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        holderClass.locationEntity = item2remove;
+        removeLocationEntity(holderClass);
+        adapter.remove(item2remove);
+    }
+
+    public void changeWirelessPreferences(View view){
+        ImageButton bt = (ImageButton) view;
+        LocationEntity locationEntity = (LocationEntity) bt.getTag();
+        ToggleButton toggleButton = (ToggleButton) view;
+
+        if(locationEntity.isWirelessPreferences()){
+            //AN
+            toggleButton.setChecked(false);
+            locationEntity.setWirelessPreferences(false);
+        } else{
+            //AUS
+            toggleButton.setChecked(true);
+            locationEntity.setWirelessPreferences(true);
+        }
+
+
+        Log.i("INFO","TOGGLED SWITCH FOR ENTITY");
+        HolderClass holderClass = new HolderClass();
+        holderClass.locationEntity = locationEntity;
+        holderClass.appDatabase = appDatabase;
+        updateLocationEntity(holderClass);
+    }
+
+
+
+
+    public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
+        locationEntityList = new GetLocationsTask().execute(holderClass).get();
+    }
+
+    public void removeLocationEntity(HolderClass holderClass) {
+        new RemoveLocationTask().execute(holderClass);
+    }
+
+    public void insertLocationEntity(HolderClass holderClass) {
+        new InsertLocationTask().execute(holderClass);
+    }
+
+    public void updateLocationEntity(HolderClass holderClass){
+        new UpdateLocationTask().execute(holderClass);
+    }
 
 }

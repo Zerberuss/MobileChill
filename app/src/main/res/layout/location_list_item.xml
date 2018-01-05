@@ -16,6 +16,20 @@
             android:gravity="center_vertical"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
+        <ToggleButton
+            android:id="@+id/wirelessPreferencesButton"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:onClick="changeWirelessPreferences"
+           />
+
+        <ImageButton
+            android:id="@+id/modifyNameButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:onClick="abc"
+            android:src="@drawable/cast_abc_scrubber_control_to_pressed_mtrl_005" />
+
         <ImageButton
             android:id="@+id/remove_btn_id"
             android:layout_width="50dp"

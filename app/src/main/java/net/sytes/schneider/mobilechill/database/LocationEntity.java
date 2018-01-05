@@ -48,9 +48,9 @@ public class LocationEntity {
     private int signalStrengthEnum;
 
 
-    //forceDisable
-    @ColumnInfo(name = "forceDisable")
-    private boolean forceDisable = false;
+    //wirelessPreferences
+    @ColumnInfo(name = "wirelessPreferences")
+    private boolean wirelessPreferences = true;
 
     public int getUid() {
         return uid;
@@ -84,12 +84,12 @@ public class LocationEntity {
         this.signalStrengthEnum = signalStrengthEnum;
     }
 
-    public boolean isForceDisable() {
-        return forceDisable;
+    public boolean isWirelessPreferences() {
+        return wirelessPreferences;
     }
 
-    public void setForceDisable(boolean forceDisable) {
-        this.forceDisable = forceDisable;
+    public void setWirelessPreferences(boolean wirelessPreferences) {
+        this.wirelessPreferences = wirelessPreferences;
     }
 
     public Date getCreated() {

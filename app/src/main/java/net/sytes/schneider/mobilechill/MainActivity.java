@@ -36,9 +36,11 @@ import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
 import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -60,6 +62,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Converters CONVERTER;
     private AppDatabase appDatabase;
 
+
+    private List<LocationEntity> locationEntityList;
 
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -97,42 +101,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_main);
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "app-database").allowMainThreadQueries().build();
-       //appDatabase = Room.databaseBuilder(getApplicationContext(),AppDatabase.class, "app-database").build();
+                AppDatabase.class, "app-database").build();
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            locationEntityList =  new GetLocationsTask().execute(holderClass).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
 
-        /*
-
-                DEVELOPING
-                CHANGE WHEN LIVE
-
-         */
-        //create DB
-
-       /* mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        Task<Location> myLocTask = mFusedLocationClient.getLastLocation();
-
-        Location myLoc = myLocTask.getResult();
-
-        Log.d("LOCATION DATA:",myLoc.toString());*/
-
-        //remove when live
-        Date today = new Date();
-        today.setTime(0);
-        LocationEntity testLoc = new LocationEntity();
-        testLoc.setName("Graz");
-
-        appDatabase.locationsDao().insertLocation(testLoc);
-        System.out.print("LocationEntity has been added to DB");
-        Log.i("INFO", "LocationEntity has been added");
-        List<LocationEntity> locationEntityList = appDatabase.locationsDao().getAllLocations();
-        Log.i("INFO", locationEntityList.toString());
-
-        /*
-
-            DO NOT USE DB ON MAIN THREAD
-
-         */
 
         mTextMessage = (TextView) findViewById(R.id.message);
         nearbyWifiList = (FrameLayout) findViewById(R.id.nearbyWifiList);
@@ -296,22 +275,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void switchToHomeLocations() {
         Intent i = new Intent(this, LocationActivity.class);
-
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
-
-
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
 
     public void switchToConnections() {
         Intent i = new Intent(this, ConnectionsActivity.class);
-
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
-
-
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
     }
