@@ -20,8 +20,8 @@ import java.security.AccessControlException;
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
     static final String ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 1000;
-    private static final float LOCATION_DISTANCE = 10;
+    private static final int LOCATION_INTERVAL = 2 * 60 * 1000;
+    private static final float LOCATION_DISTANCE = 300;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
     private LocationManager mLocationManager = null;
@@ -46,10 +46,10 @@ public class LocationService extends Service {
         @Override
         public void onLocationChanged(Location location)
         {
-
             Log.e(TAG, "onLocationChanged: " + location);
 
             mLastLocation.set(location);
+            mLocationManager.removeUpdates(mLocationListeners[1]);
             sendLocationBroadcast(location);
         }
 
@@ -67,8 +67,8 @@ public class LocationService extends Service {
     }
 
     LocationListener[] mLocationListeners = new LocationListener[] {
-            new LocationListener(LocationManager.GPS_PROVIDER),
-            new LocationListener(LocationManager.NETWORK_PROVIDER)
+            new LocationListener(LocationManager.NETWORK_PROVIDER),
+            new LocationListener(LocationManager.GPS_PROVIDER)
     };
 
     @Override
@@ -93,7 +93,7 @@ public class LocationService extends Service {
         try {
             mLocationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
-                    mLocationListeners[1]);
+                    mLocationListeners[0]);
         } catch (java.lang.SecurityException ex) {
             Log.i(TAG, "fail to request location update, ignore", ex);
         } catch (IllegalArgumentException ex) {
@@ -102,7 +102,7 @@ public class LocationService extends Service {
         try {
             mLocationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
-                    mLocationListeners[0]);
+                    mLocationListeners[1]);
         } catch (java.lang.SecurityException ex) {
             Log.i(TAG, "fail to request location update, ignore", ex);
         } catch (IllegalArgumentException ex) {
