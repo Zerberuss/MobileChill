@@ -30,6 +30,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
@@ -59,7 +60,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Converters CONVERTER;
     private AppDatabase appDatabase;
 
-
+    private boolean mapZoomed = false;
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -142,7 +143,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
         locationTrackingSwitch = (Switch) findViewById(R.id.locationTrackingSwitch);
-
+        mapZoomed = false;
 
         nearbyWifiList.animate().translationY(-2000);
 
@@ -224,10 +225,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
         registerReceiver(mLocationReceiver,
                 new IntentFilter(LocationService.NEW_LOCATION_ACTION_TAG));
-
-        setGettingContinousUpdates(true);
-        getNewLocation();
-        getNewWifiData();
     }
 
 
@@ -249,7 +246,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 return;
             }
             mMap.setMyLocationEnabled(true);
-
+            LatLng graz = new LatLng(47.074458, 15.438041);                 //  Latitude, Longitude in degrees.
+            mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
@@ -265,8 +263,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onResume(){
         super.onResume();
+        mapZoomed = false;
+
         setGettingContinousUpdates(true);
         getNewLocation();
+        getNewWifiData();
     }
 
 
@@ -303,7 +304,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked()){
                 if (mMap != null) {
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
+
+                    if(!mapZoomed){                                                     //zomm the map at
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
+                        mapZoomed = true;
+                    }
+                    else
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
                 }
                 else
                     Log.e(TAG, "Map not found");
