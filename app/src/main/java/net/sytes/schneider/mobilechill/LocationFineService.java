@@ -1,8 +1,10 @@
 package net.sytes.schneider.mobilechill;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -18,6 +20,9 @@ import java.util.Calendar;
 public class LocationFineService extends Service implements LocationListener {
     LocationManager mLocationManager;
     String TAG = "Location Fine Service";
+    Location location = null;
+    static final String ACTION_GET_NEW_FINE_LOCATION = "LocationFineServiceGetInfo";
+    static final String NEW_FINE_LOCATION_ACTION_TAG = "LocationFineServiceNewLocation";
 
     public IBinder onBind(Intent arg0) {
         return null;
@@ -34,7 +39,6 @@ public class LocationFineService extends Service implements LocationListener {
 
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        Location location = null;
         if (mLocationManager != null) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
@@ -43,7 +47,7 @@ public class LocationFineService extends Service implements LocationListener {
         }
         if(location != null && location.getTime() > Calendar.getInstance().getTimeInMillis() - 2 * 60 * 1000) {
             // Do something with the recent location fix
-            //  otherwise wait for the update below
+            Log.w(TAG, "last Fine Location too new");
         }
         else {
             if (mLocationManager != null) {
@@ -57,14 +61,34 @@ public class LocationFineService extends Service implements LocationListener {
                 }
             }
         }
+
+        registerReceiver(mNewInfoScanReceiver,
+                new IntentFilter(LocationFineService.ACTION_GET_NEW_FINE_LOCATION));
     }
 
     public void onLocationChanged(Location location) {
         if (location != null) {
-            Log.v("Location Changed", location.getLatitude() + " and " + location.getLongitude());
-
+            Log.e("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
             mLocationManager.removeUpdates(this);
+            sendLocationBroadcast(location);
         }
+    }
+
+    final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            Log.i(TAG, "Fine Location Info will be sent out..");
+            onCreate();
+            sendLocationBroadcast(location);
+        }
+    };
+
+    void sendLocationBroadcast(Location location){
+        Intent newLocationIntent = new Intent(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG);
+        newLocationIntent.putExtra("locationA", location.getAltitude());
+        newLocationIntent.putExtra("locationLo", location.getLongitude());
+        newLocationIntent.putExtra("locationLa", location.getLatitude());
+        sendBroadcast(newLocationIntent);
     }
 
     // Required functions
