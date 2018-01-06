@@ -267,6 +267,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onResume(){
         super.onResume();
         setGettingContinousUpdates(true);
+        getNewLocation();
     }
 
 
