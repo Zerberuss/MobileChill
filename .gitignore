@@ -57,3 +57,5 @@ freeline/
 freeline_project_description.json
 
 \.idea/
+
+app/src/debug/res/values/google_maps_api\.xml

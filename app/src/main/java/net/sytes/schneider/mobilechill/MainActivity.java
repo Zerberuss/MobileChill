@@ -30,7 +30,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
@@ -46,7 +45,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
 
-
+    private final String TAG = "MainActivity";
     private TextView mTextMessage;
     private FrameLayout nearbyWifiList;
     private FloatingActionButton addHomeButton;
@@ -189,6 +188,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
             if(!isMyServiceRunning(LocationService.class))
                 startService(new Intent(this, LocationService.class));
+            if(!isMyServiceRunning(LocationFineService.class))
+                startService(new Intent(this, LocationFineService.class));
             if(!isMyServiceRunning(ConnectionService.class))
                 startService(new Intent(this, ConnectionService.class));
             Log.i("MAIN", "Started Services");
@@ -214,8 +215,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
-                sendBroadcast(newLocationIntent);
+
             }
         });
 
@@ -223,12 +223,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
         registerReceiver(mLocationReceiver,
-                new IntentFilter(LocationService.ACTION_TAG));
+                new IntentFilter(LocationService.NEW_LOCATION_ACTION_TAG));
 
-        Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
-        sendBroadcast(newLocationIntent);
-        Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-        sendBroadcast(newConnectionIntent);
+        setGettingContinousUpdates(true);
+        getNewLocation();
+        getNewWifiData();
     }
 
 
@@ -245,12 +244,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         try {
-            // Add a marker in Sydney and move the camera
-            LatLng graz = new LatLng(47.074458, 15.438041);                 //	Latitude, Longitude in degrees.
-            mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(graz));
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(graz, 19f));
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("MainActivity", "Missing permissions to access map!");
                 return;
             }
             mMap.setMyLocationEnabled(true);
@@ -259,6 +254,36 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        setGettingContinousUpdates(false);
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        setGettingContinousUpdates(true);
+        getNewLocation();
+    }
+
+
+    final void getNewLocation(){
+        Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
+        sendBroadcast(newLocationIntent);
+    }
+
+    final void setGettingContinousUpdates(boolean setting){
+        Intent newKeepGetingLocUpdatesIntent = new Intent(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES);
+        newKeepGetingLocUpdatesIntent.putExtra("keepSending", setting);
+        sendBroadcast(newKeepGetingLocUpdatesIntent);
+    }
+
+    final void getNewWifiData(){
+        Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+        sendBroadcast(newConnectionIntent);
     }
 
 
@@ -273,13 +298,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent){
-            System.out.println("Location Height: " + intent.getDoubleExtra("locationA",0));//
+            //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
-            if (locationTrackingSwitch.isChecked())
-                Log.i("location",lo+" "+la);
-                if (mMap != null)
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo),19f));
+            if (locationTrackingSwitch.isChecked()){
+                if (mMap != null) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
+                }
+                else
+                    Log.e(TAG, "Map not found");
+            }
         }
     };
 
@@ -299,7 +327,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
-
+        setGettingContinousUpdates(false);
 
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
