@@ -55,6 +55,7 @@
         </activity>
 
         <service android:name=".LocationService" android:process=":location_service" />
+        <service android:name=".LocationFineService" android:process=":location_fine_service" />
 
         <service android:name=".ConnectionService" android:process=":connection_service" />
 
