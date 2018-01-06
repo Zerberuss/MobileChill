@@ -17,12 +17,17 @@ import android.widget.Toast;
 import java.security.AccessControlException;
 import java.util.Calendar;
 
-
+/**
+ * The service determines the current position via provider and checks if a home location is nearby
+ * If this is the case, the position is again checked via GPS and adjusted (power-consuming)
+ *
+ */
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
     static final String NEW_LOCATION_ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 1000;  //5 * 60 * 1000;     //alle 5 Minuten aktuellen Standort abfragen
+    private static final int LOCATION_INTERVAL = 1000;  //5 * 60 * 1000;     //jede Minute aktuellen Standort abfragen
     private static final float LOCATION_DISTANCE = 0;
+    static final int TIME_DIFFERENCE_THRESHOLD = 1  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
     private LocationManager mLocationManager = null;
@@ -46,9 +51,12 @@ public class LocationService extends Service {
         @Override
         public void onLocationChanged(Location location)
         {
-            Log.i(TAG, "onLocationChanged: " + location);
-            mLastLocation.set(location);
-            sendLocationBroadcast(location);
+            Log.i(TAG, "New passive location...");
+            if(isBetterLocation(mLastLocation, location)){
+                Log.i(TAG, "New set as new lastPosition!");
+                mLastLocation.set(location);
+                sendLocationBroadcast(mLastLocation);
+            }
         }
 
         @Override
@@ -98,7 +106,7 @@ public class LocationService extends Service {
         } catch (IllegalArgumentException ex) {
             Log.e(TAG, "network provider does not exist, " + ex.getMessage());
         }
-        getFineLoctaion();
+        getFineLocation();
     }
 
     @Override
@@ -121,34 +129,27 @@ public class LocationService extends Service {
         @Override
         public void onReceive(Context c, Intent intent) {
             Log.i(TAG, "New Location Info will be sent out..");
-
-            getFineLoctaion();
-            if (mLastLocation != null)
-                sendLocationBroadcast(mLastLocation);
+            getFineLocation();
         }
     };
 
     final BroadcastReceiver mNewFineInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.i(TAG, "New Fine Location received...");
-            double lo = intent.getDoubleExtra("locationLo",0);
-            double la = intent.getDoubleExtra("locationLa",0);
-            double al = intent.getDoubleExtra("locationAl",0);
-            float ac = intent.getFloatExtra("locationAc",0);
+            //Log.i(TAG, "New Fine Location received...");
+            Location mLastGpsLocation = new Location(mLocationManager.getAllProviders().get(0));
 
-            if (mLastLocation == null) {
-                Log.w(TAG, "Can't update last location! -> creating new location");
-                mLastLocation = new Location(mLocationManager.getAllProviders().get(0));
-                //return;
+            mLastGpsLocation.setTime(Calendar.getInstance().getTimeInMillis());
+            mLastGpsLocation.setAltitude(intent.getDoubleExtra("locationAl",0));
+            mLastGpsLocation.setLatitude(intent.getDoubleExtra("locationLa",0));
+            mLastGpsLocation.setLongitude(intent.getDoubleExtra("locationLo",0));
+            mLastGpsLocation.setAccuracy(intent.getFloatExtra("locationAc",0));
+
+            if(isBetterLocation(mLastLocation, mLastGpsLocation)){
+                //Log.i(TAG, "New set as new lastPosition!");
+                mLastLocation.set(mLastGpsLocation);
+                sendLocationBroadcast(mLastLocation);
             }
-            mLastLocation.setTime(Calendar.getInstance().getTimeInMillis());
-            mLastLocation.setAltitude(al);
-            mLastLocation.setLatitude(la);
-            mLastLocation.setLongitude(lo);
-            mLastLocation.setAccuracy(ac);
-
-            sendLocationBroadcast(mLastLocation);
         }
     };
 
@@ -156,7 +157,8 @@ public class LocationService extends Service {
         checkForHomeConnection(location);
 
         Intent newLocationIntent = new Intent(LocationService.NEW_LOCATION_ACTION_TAG);
-        newLocationIntent.putExtra("locationA", location.getAltitude());
+        newLocationIntent.putExtra("locationAl", location.getAltitude());
+        newLocationIntent.putExtra("locationAc", location.getAccuracy());
         newLocationIntent.putExtra("locationLo", location.getLongitude());
         newLocationIntent.putExtra("locationLa", location.getLatitude());
         sendBroadcast(newLocationIntent);
@@ -180,9 +182,42 @@ public class LocationService extends Service {
         }
     }
 
-    void getFineLoctaion(){
+    void getFineLocation(){
         Intent newLocationIntent = new Intent(LocationFineService.ACTION_GET_NEW_FINE_LOCATION);
         sendBroadcast(newLocationIntent);
+    }
+
+    boolean isBetterLocation(Location oldLocation, Location newLocation) {
+        // If there is no old location, of course the new location is better.
+        if(oldLocation == null) {
+            return true;
+        }
+
+        // Check if new location is newer in time.
+        boolean isNewer = newLocation.getTime() > oldLocation.getTime();
+
+        // Check if new location more accurate. Accuracy is radius in meters, so less is better.
+        boolean isMoreAccurate = newLocation.getAccuracy() <= oldLocation.getAccuracy();
+
+        if(isMoreAccurate && isNewer) {
+            // More accurate and newer is always better.
+            return true;
+        } else if(isMoreAccurate) {
+
+            Log.w(TAG, "new pos timing new vs. old ->  "+ newLocation.getTime() +" - "+ oldLocation.getTime() + " > -" + TIME_DIFFERENCE_THRESHOLD);
+            // More accurate but not newer can lead to bad fix because of user movement.
+            // Let us set a threshold for the maximum tolerance of time difference.
+            long timeDifference = newLocation.getTime() - oldLocation.getTime();
+
+            // If time difference is not greater then allowed threshold we accept it.
+            if(timeDifference > -TIME_DIFFERENCE_THRESHOLD) {
+                return true;
+            }
+        }
+        else
+            Log.w(TAG, "new pos not accurate: new vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
+
+        return false;
     }
 
     void checkForHomeConnection(Location location){

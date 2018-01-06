@@ -15,10 +15,10 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 /**
- * Das Service gibt die genaue GPS Position zurürck
- *
- * 1. Wird verwendet um in der Map die aktuelle position zu tracken
- * 2. Wird verwendet um zu verifizieren das man sich wirklich in der Nähe einer Homelocation befindet
+ * The service returns the exact GPS position (usually much more accurate than the pos. from the provider, but a battery drainer)
+ *
+ * 1. Used to update the current position of the map in the map
+ * 2. Used to verify that you are really near a home location
  */
 public class LocationFineService extends Service implements LocationListener {
     LocationManager mLocationManager;
@@ -67,7 +67,7 @@ public class LocationFineService extends Service implements LocationListener {
 
     public void onLocationChanged(Location location) {
         if (location != null) {
-            Log.e("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
+            //Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
             if(!KEEP_SENDING_UPDATES)
                 mLocationManager.removeUpdates(this);
 

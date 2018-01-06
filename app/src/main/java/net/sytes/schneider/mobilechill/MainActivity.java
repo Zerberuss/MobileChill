@@ -215,8 +215,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
-                sendBroadcast(newLocationIntent);
+
             }
         });
 
@@ -224,7 +223,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
         registerReceiver(mLocationReceiver,
-                new IntentFilter(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG));
+                new IntentFilter(LocationService.NEW_LOCATION_ACTION_TAG));
 
         setGettingContinousUpdates(true);
         getNewLocation();
@@ -299,19 +298,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent){
-            Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));//
+            //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked()){
-                Log.i(TAG, "location:   " + lo+" "+la);
                 if (mMap != null) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
                 }
                 else
                     Log.e(TAG, "Map not found");
             }
-            else
-                Log.i(TAG, "Location Tracking disabled");
         }
     };
 
