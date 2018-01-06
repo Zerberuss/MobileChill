@@ -28,6 +28,7 @@ public class LocationService extends Service {
     private static final int LOCATION_INTERVAL = 1000;  //5 * 60 * 1000;     //jede Minute aktuellen Standort abfragen
     private static final float LOCATION_DISTANCE = 0;
     static final int TIME_DIFFERENCE_THRESHOLD = 1  * 1000;
+    static final int TIME_DIFFERENCE_IGNORE_ACCURACY = 6 * 60  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
     private LocationManager mLocationManager = null;
@@ -199,23 +200,25 @@ public class LocationService extends Service {
         // Check if new location more accurate. Accuracy is radius in meters, so less is better.
         boolean isMoreAccurate = newLocation.getAccuracy() <= oldLocation.getAccuracy();
 
+        long timeDifference = newLocation.getTime() - oldLocation.getTime();
+
         if(isMoreAccurate && isNewer) {
             // More accurate and newer is always better.
             return true;
         } else if(isMoreAccurate) {
 
-            Log.w(TAG, "new pos timing new vs. old ->  "+ newLocation.getTime() +" - "+ oldLocation.getTime() + " > -" + TIME_DIFFERENCE_THRESHOLD);
+            Log.w(TAG, "new pos timing new vs. old ->  "+ newLocation.getTime() +" - "+ oldLocation.getTime() + " > " + TIME_DIFFERENCE_THRESHOLD);
             // More accurate but not newer can lead to bad fix because of user movement.
             // Let us set a threshold for the maximum tolerance of time difference.
-            long timeDifference = newLocation.getTime() - oldLocation.getTime();
 
             // If time difference is not greater then allowed threshold we accept it.
-            if(timeDifference > -TIME_DIFFERENCE_THRESHOLD) {
+            if(timeDifference > TIME_DIFFERENCE_THRESHOLD) {
                 return true;
             }
-        }
-        else
-            Log.w(TAG, "new pos not accurate: new vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
+        } else if(isNewer && timeDifference > TIME_DIFFERENCE_IGNORE_ACCURACY) {
+            return true;
+        } else
+            Log.w(TAG, "new pos not accurate and not new enough: new ac vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
 
         return false;
     }

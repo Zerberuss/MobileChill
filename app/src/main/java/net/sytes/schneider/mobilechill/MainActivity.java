@@ -304,9 +304,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked()){
                 if (mMap != null) {
-
-                    if(!mapZoomed){                                                     //zomm the map at
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
+                    if(!mapZoomed){                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 20f));
                         mapZoomed = true;
                     }
                     else
