@@ -21,7 +21,7 @@ import java.util.Calendar;
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
     static final String NEW_LOCATION_ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 100;  //5 * 60 * 1000;     //alle 5 Minuten aktuellen Standort abfragen
+    private static final int LOCATION_INTERVAL = 1000;  //5 * 60 * 1000;     //alle 5 Minuten aktuellen Standort abfragen
     private static final float LOCATION_DISTANCE = 0;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
@@ -134,16 +134,19 @@ public class LocationService extends Service {
             Log.i(TAG, "New Fine Location received...");
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
-            double a = intent.getDoubleExtra("locationA",0);
+            double al = intent.getDoubleExtra("locationAl",0);
+            float ac = intent.getFloatExtra("locationAc",0);
+
             if (mLastLocation == null) {
                 Log.w(TAG, "Can't update last location! -> creating new location");
                 mLastLocation = new Location(mLocationManager.getAllProviders().get(0));
                 //return;
             }
             mLastLocation.setTime(Calendar.getInstance().getTimeInMillis());
-            mLastLocation.setAltitude(a);
+            mLastLocation.setAltitude(al);
             mLastLocation.setLatitude(la);
             mLastLocation.setLongitude(lo);
+            mLastLocation.setAccuracy(ac);
 
             sendLocationBroadcast(mLastLocation);
         }

@@ -224,8 +224,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
         registerReceiver(mLocationReceiver,
-                new IntentFilter(LocationService.NEW_LOCATION_ACTION_TAG));
+                new IntentFilter(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG));
 
+        setGettingContinousUpdates(true);
         getNewLocation();
         getNewWifiData();
     }
@@ -256,9 +257,28 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    protected void onPause(){
+        super.onPause();
+        setGettingContinousUpdates(false);
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        setGettingContinousUpdates(true);
+    }
+
+
     final void getNewLocation(){
         Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
         sendBroadcast(newLocationIntent);
+    }
+
+    final void setGettingContinousUpdates(boolean setting){
+        Intent newKeepGetingLocUpdatesIntent = new Intent(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES);
+        newKeepGetingLocUpdatesIntent.putExtra("keepSending", setting);
+        sendBroadcast(newKeepGetingLocUpdatesIntent);
     }
 
     final void getNewWifiData(){
@@ -278,14 +298,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent){
-            Log.i(TAG, "Received Location ->  Height: " + intent.getDoubleExtra("locationA",0));//
+            Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));//
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
             if (locationTrackingSwitch.isChecked()){
                 Log.i(TAG, "location:   " + lo+" "+la);
                 if (mMap != null) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 19f));
-                    getNewLocation();
                 }
                 else
                     Log.e(TAG, "Map not found");
@@ -311,7 +330,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
-
+        setGettingContinousUpdates(false);
 
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);

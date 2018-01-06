@@ -22,7 +22,6 @@ import android.widget.Button;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
@@ -123,7 +122,6 @@ public class LocationActivity extends ListActivity {
                             appDatabase.locationsDao().insertLocation(locationEntity);
 
                         } else {
-
                             Log.i("DUPLICATE", "ALREADY IN DB");
                         }
 
