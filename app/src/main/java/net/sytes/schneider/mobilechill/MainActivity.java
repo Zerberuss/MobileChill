@@ -204,10 +204,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
             jobScheduler.schedule(builder.build());
 
-
-
-            /*if(!isMyServiceRunning(LocationService.class))
-                startService(new Intent(this, LocationService.class));*/
             if(!isMyServiceRunning(LocationFineService.class))
                 startService(new Intent(this, LocationFineService.class));
             if(!isMyServiceRunning(ConnectionService.class))

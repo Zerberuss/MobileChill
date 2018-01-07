@@ -1,6 +1,7 @@
 package net.sytes.schneider.mobilechill;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.BroadcastReceiver;
@@ -11,7 +12,6 @@ import android.location.Location;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -45,26 +45,34 @@ public class LocationService extends JobService {
     static final int TIME_DIFFERENCE_IGNORE_ACCURACY = 6 * 60  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
-    private Location mLastLocation = new Location("dummyprovider");;
+    private Location mLastLocation = new Location("dummyprovider");
+
 
     public LocationService() {
     }
 
     @Override
     public boolean onStartJob(JobParameters jobParameters) {
-        Log.e(TAG, "Start Job Called");
-        startLocationUpdates();
-        initializeBroadCastReceivers();
-        getFineLocation();
+        Log.i(TAG, "Start Job Called");
 
+        if(!isMyServiceRunning(LocationFineService.class))
+            startService(new Intent(this, LocationFineService.class));
+        if(!isMyServiceRunning(ConnectionService.class))
+            startService(new Intent(this, ConnectionService.class));
+
+        if (mLocationRequest == null) {
+            startLocationUpdates();
+            initializeBroadCastReceivers();
+            getFineLocation();
+        }
         return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters jobParameters) {
-        Toast.makeText(this,
-                "MyJobService.onStopJob()",
-                Toast.LENGTH_SHORT).show();
+        Log.w(TAG, "Stopping Job");
+
+        stopLocationUpdates();
 
         unregisterReceiver(mNewFineInfoScanReceiver);
         unregisterReceiver(mNewInfoScanReceiver);
@@ -100,6 +108,12 @@ public class LocationService extends JobService {
                 }
             },
             Looper.myLooper());
+    }
+
+    private void stopLocationUpdates() {
+        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
+        locationClient.removeLocationUpdates(new LocationCallback());
+        mLocationRequest = null;
     }
 
 
@@ -139,7 +153,15 @@ public class LocationService extends JobService {
     }
 
 
-
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
         @Override

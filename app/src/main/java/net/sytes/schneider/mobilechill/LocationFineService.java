@@ -52,10 +52,7 @@ public class LocationFineService extends Service implements LocationListener {
             }
             location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         }
-//        if(location != null && location.getTime() > Calendar.getInstance().getTimeInMillis() - 2 * 60 * 1000) {
-            // Do something with the recent location fix
-  //          Log.w(TAG, "last Fine Location too new");
-  //      }
+
         KEEP_SENDING_UPDATES = true;
         configureGpsUpater();
 
