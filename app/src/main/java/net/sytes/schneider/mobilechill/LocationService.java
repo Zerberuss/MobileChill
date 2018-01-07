@@ -13,7 +13,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -29,25 +28,23 @@ import java.util.Calendar;
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 /**
- * The service determines the current position via provider and checks if a home location is nearby
+ * The job service determines the current position via provider and checks if a home location is nearby
  * If this is the case, the position is again checked via GPS and adjusted (power-consuming)
+ *
  *
  */
 
 public class LocationService extends JobService {
-    protected JobParameters mJobParameters;
-    private GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
 
     private static final String TAG = "LocationService";
     static final String NEW_LOCATION_ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 60*1000;  //5 * 60 * 1000;     //jede Minute aktuellen Standort abfragen  TODO
-    private static final int LOCATION_FASTEST_INTERVAL = 30*1000;
+    private static final int LOCATION_INTERVAL = 5 * 60 * 1000;     //Alle 1-5 Minute den aktuellen Standort abfragen
+    private static final int LOCATION_FASTEST_INTERVAL = 60 * 1000;
     static final int TIME_DIFFERENCE_THRESHOLD = 1  * 1000;
     static final int TIME_DIFFERENCE_IGNORE_ACCURACY = 6 * 60  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
-    private FusedLocationProviderClient mFusedLocationClient;
     private Location mLastLocation = new Location("dummyprovider");;
 
     public LocationService() {
@@ -58,7 +55,8 @@ public class LocationService extends JobService {
         Log.e(TAG, "Start Job Called");
         startLocationUpdates();
         initializeBroadCastReceivers();
-        getLastLocation();
+        getFineLocation();
+
         return true;
     }
 
@@ -106,11 +104,10 @@ public class LocationService extends JobService {
 
 
     @SuppressLint("MissingPermission")
-    public void getLastLocation() {
+    public void getLastPassiveLocation() {
         // Get last known recent location using new Google Play Services SDK (v11+)
         FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
 
-        getFineLocation();
 
         locationClient.getLastLocation()
             .addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -147,7 +144,7 @@ public class LocationService extends JobService {
     final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            getLastLocation();
+            getLastPassiveLocation();
         }
     };
 
