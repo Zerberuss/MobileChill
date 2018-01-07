@@ -1,63 +1,56 @@
 package net.sytes.schneider.mobilechill;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v4.app.ActivityCompat;
+import android.os.Looper;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 /**
  * The service returns the exact GPS position (usually much more accurate than the pos. from the provider, but a battery drainer)
- *
+ *  Can be used as template in other projects!
+ *
  * 1. Used to update the current position of the map in the map
  * 2. Used to verify that you are really near a home location
  */
-public class LocationFineService extends Service implements LocationListener {
-    LocationManager mLocationManager;
+public class LocationFineService extends Service {
     String TAG = "Location Fine Service";
-    Location location = null;
+
     static final String ACTION_GET_NEW_FINE_LOCATION = "LocationFineServiceGetInfo";
     static final String NEW_FINE_LOCATION_ACTION_TAG = "LocationFineServiceNewLocation";
     static final String ACTION_SET_KEEP_SENDING_UPDATES = "LocationFineServiceKeepSendingUpdates";
 
-    private static final int LOCATION_INTERVAL = 100;
+    private static final int UPDATE_INTERVAL = 1000;
+    private static final int FASTEST_INTERVAL = 200;
+
     boolean KEEP_SENDING_UPDATES = true;
 
-    public IBinder onBind(Intent arg0) {
-        return null;
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        super.onStartCommand(intent, flags, startId);
-        return START_STICKY;
-    }
+    private LocationRequest mLocationRequest;
+    private LocationCallback mLocationCallback;
 
     @Override
     public void onCreate() {
-
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        if (mLocationManager != null) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        }
-//        if(location != null && location.getTime() > Calendar.getInstance().getTimeInMillis() - 2 * 60 * 1000) {
-            // Do something with the recent location fix
-  //          Log.w(TAG, "last Fine Location too new");
-  //      }
         KEEP_SENDING_UPDATES = true;
-        configureGpsUpater();
+        startLocationUpdates();
 
         registerReceiver(mNewInfoScanReceiver,
                 new IntentFilter(LocationFineService.ACTION_GET_NEW_FINE_LOCATION));
@@ -65,11 +58,79 @@ public class LocationFineService extends Service implements LocationListener {
                 new IntentFilter(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES));
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    // Trigger new location updates at interval
+    @SuppressLint("MissingPermission")
+    protected void startLocationUpdates() {
+
+        // Create the location request to start receiving updates
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        mLocationCallback = new LocationCallback(){
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                // do work here
+                onLocationChanged(locationResult.getLastLocation());
+            }
+        };
+
+        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
+        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, mLocationCallback,
+                Looper.myLooper());
+    }
+
+    @SuppressLint("MissingPermission")
+    public void getLastLocation() {
+        // Get last known recent location using new Google Play Services SDK (v11+)
+        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
+
+        locationClient.getLastLocation()
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // GPS location can be null if GPS is switched off
+                        if (location != null) {
+                            onLocationChanged(location);
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("MapDemoActivity", "Error trying to get last GPS location");
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void stopLocationUpdates() {
+        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
+        locationClient.removeLocationUpdates(mLocationCallback);
+    }
+
     public void onLocationChanged(Location location) {
         if (location != null) {
-            //Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
+            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
             if(!KEEP_SENDING_UPDATES)
-                mLocationManager.removeUpdates(this);
+                stopLocationUpdates();
 
             sendLocationBroadcast(location);
         }
@@ -79,46 +140,32 @@ public class LocationFineService extends Service implements LocationListener {
         @Override
         public void onReceive(Context c, Intent intent) {
             Log.i(TAG, "Fine Location Info will be sent out..");
-            configureGpsUpater();
-            sendLocationBroadcast(location);
+            getLastLocation();
         }
     };
 
     final BroadcastReceiver mSetKeepSendingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.e(TAG, "Configuring Keep Sending Setting");
-            KEEP_SENDING_UPDATES = intent.getBooleanExtra("keepSending",false);
+            Log.i(TAG, "Configuring Keep Sending Setting");
+            boolean newKeepsending = intent.getBooleanExtra("keepSending",false);
+            if(newKeepsending && !KEEP_SENDING_UPDATES) {
+                KEEP_SENDING_UPDATES = true;
+                startLocationUpdates();
+            }
+            KEEP_SENDING_UPDATES = newKeepsending;
         }
     };
 
     void sendLocationBroadcast(Location location){
-        Intent newLocationIntent = new Intent(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG);
-        newLocationIntent.putExtra("locationAl", location.getAltitude());
-        newLocationIntent.putExtra("locationAc", location.getAccuracy());
-        newLocationIntent.putExtra("locationLo", location.getLongitude());
-        newLocationIntent.putExtra("locationLa", location.getLatitude());
-        sendBroadcast(newLocationIntent);
-    }
-
-    void configureGpsUpater(){
-        if (mLocationManager != null) {
-            try {
-                mLocationManager.requestLocationUpdates(
-                        LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, 0, this);
-            } catch (java.lang.SecurityException ex) {
-                Log.i(TAG, "fail to request location update, ignore", ex);
-            } catch (IllegalArgumentException ex) {
-                Log.d(TAG, "gps provider does not exist " + ex.getMessage());
-            }
+        if(location != null) {
+            Intent newLocationIntent = new Intent(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG);
+            newLocationIntent.putExtra("locationAl", location.getAltitude());
+            newLocationIntent.putExtra("locationAc", location.getAccuracy());
+            newLocationIntent.putExtra("locationLo", location.getLongitude());
+            newLocationIntent.putExtra("locationLa", location.getLatitude());
+            sendBroadcast(newLocationIntent);
         }
     }
-
-
-    // Required functions
-    public void onProviderDisabled(String arg0) {}
-    public void onProviderEnabled(String arg0) {}
-    public void onStatusChanged(String arg0, int arg1, Bundle arg2) {}
-
 
 }

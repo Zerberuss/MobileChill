@@ -182,12 +182,7 @@ public class LocationActivity extends ListActivity {
     private boolean checkIfinDatabase(LocationEntity locationEntity){
 
         List<LocationEntity> list = appDatabase.locationsDao().checkIfinDB(locationEntity.getLatidude(),locationEntity.getLongitude());
-        if(list==null || list.size()==0){
-
-            //if it is not in list return false
-            return false;
-        }
-        return true;
+        return !(list == null || list.size() == 0);
     }
 
 
