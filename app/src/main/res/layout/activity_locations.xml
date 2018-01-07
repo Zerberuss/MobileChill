@@ -34,7 +34,7 @@
                 android:layout_width="173dp"
                 android:layout_height="36dp"
                 android:layout_weight="1"
-                android:text="Save Location"
+                android:text="Save current Location"
                 android:visibility="visible" />
 
             <Button
@@ -42,7 +42,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_weight="1"
-                android:text="Load saved Locations"
+                android:text="Load..."
                 android:visibility="visible" />
         </LinearLayout>
 

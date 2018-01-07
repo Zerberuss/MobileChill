@@ -1,7 +1,9 @@
 package net.sytes.schneider.mobilechill;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
@@ -12,12 +14,16 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -110,28 +116,8 @@ public class LocationActivity extends ListActivity {
 
         getLocationButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
-
                 //refresh
                 refreshListView(holderClass);
-                /*
-                try {
-                    locationEntityList = new GetLocationsTask().execute(holderClass).get();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
-                ListView listView = (ListView) findViewById(android.R.id.list);
-
-
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        Toast.makeText(LocationActivity.this, "location deleted", Toast.LENGTH_LONG);
-                    }
-                });
-                listView.setAdapter(adapter); */
             }
         });
         saveBtn.setOnClickListener(c -> {
@@ -234,7 +220,8 @@ public class LocationActivity extends ListActivity {
         Log.i("INFO","");
         return inDatabase;
     }
-
+    //TODO
+    //METHOD THAT RETURNS A SPECIFIC MATCHING(LAT;LONG) LOCATIONENTITY
 
     public void removeListEntry(View view) {
         ImageButton bt = (ImageButton) view;
@@ -255,10 +242,12 @@ public class LocationActivity extends ListActivity {
 
         if(locationEntity.isWirelessPreferences()){
             //AN
+            toggleButton.setTextOff("OFF");
             toggleButton.toggle();
             locationEntity.setWirelessPreferences(false);
         } else{
             //AUS
+            toggleButton.setTextOn("ON");
             toggleButton.toggle();
             locationEntity.setWirelessPreferences(true);
         }
@@ -269,8 +258,9 @@ public class LocationActivity extends ListActivity {
         holderClass.locationEntity = locationEntity;
         holderClass.appDatabase = appDatabase;
         //update does not update therefore delete+insert
-        removeLocationEntity(holderClass);
-        insertLocationEntity(holderClass);
+        //removeLocationEntity(holderClass);
+        //insertLocationEntity(holderClass);
+        updateLocationEntity(holderClass);
         try {
             getLocationEntities(holderClass);
         } catch (ExecutionException | InterruptedException e) {
@@ -278,7 +268,53 @@ public class LocationActivity extends ListActivity {
         }
     }
 
+    public void modifyName(View view){
+        ImageButton imageButton = (ImageButton) view;
+        LocationEntity locationEntity = (LocationEntity) imageButton.getTag();
 
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        holderClass.locationEntity=locationEntity;
+
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(LocationActivity.this);
+
+        LayoutInflater inflater = this.getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.prompts, null);
+        alertDialog.setView(dialogView);
+
+        TextView saveTxt = (TextView) dialogView.findViewById(R.id.promptText);
+        saveTxt.setText("Change name:");
+        EditText editText = (EditText) dialogView.findViewById(R.id.editTextDialogUserInput);
+        editText.setText(locationEntity.getName());
+
+
+        alertDialog.setTitle("Change name");
+        alertDialog.setMessage("Please enter a new Name:");
+
+        final EditText input = new EditText(LocationActivity.this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT);
+        input.setLayoutParams(lp);
+        alertDialog.setView(input); // uncomment this line
+        alertDialog.setPositiveButton("Save",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newName = input.getText().toString();
+                        locationEntity.setName(newName);
+                        holderClass.locationEntity = locationEntity;
+                        updateLocationEntity(holderClass);
+                    }
+                });
+
+        alertDialog.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        alertDialog.show();
+    }
 
 
     public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
@@ -296,7 +332,9 @@ public class LocationActivity extends ListActivity {
     }
     //TODO BUGGED
     public void updateLocationEntity(HolderClass holderClass){
-        new UpdateLocationTask().execute(holderClass);
+        removeLocationEntity(holderClass);
+        insertLocationEntity(holderClass);
+        //new UpdateLocationTask().execute(holderClass);
     }
 
 }

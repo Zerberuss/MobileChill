@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -38,32 +40,45 @@ public class LocationListAdapter extends ArrayAdapter<LocationEntity> {
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         View row = convertView;
+        View promptsView = convertView;
         if(row == null){
             LayoutInflater vi = LayoutInflater.from(getContext());
             row = vi.inflate(R.layout.location_list_item,null);
+            promptsView = vi.inflate(R.layout.prompts,null);
 
         }
 
         ViewHolder holder = new ViewHolder();
         //setupItem(holder);
         locationEntityList.get(position).setDisplayName(locationEntityList.get(position).getName());
-        if(locationEntityList.get(position).getDisplayName()!=null) {
+        if(locationEntityList.get(position).getName()!=null) {
 
            holder.displayName = (TextView) row.findViewById(R.id.locationNameTextView);
            holder.removeListEntryButton = (ImageButton) row.findViewById(R.id.remove_btn_id);
-            holder.changeNameButton = (ImageButton) row.findViewById(R.id.modifyNameButton);
-            holder.changeWirelessPreferencesButton = (ToggleButton) row.findViewById(R.id.wirelessPreferencesButton);
+           holder.changeNameButton = (ImageButton) row.findViewById(R.id.modifyNameButton);
+           holder.changeWirelessPreferencesButton = (ToggleButton) row.findViewById(R.id.wirelessPreferencesButton);
 
             //(CharSequence) locationEntityList.get(position);
             // Create an ArrayAdapter using the string array and a default spinner layout
 
         }
-        holder.displayName.setText( locationEntityList.get(position).getDisplayName());
+        holder.displayName.setText( locationEntityList.get(position).getName());
         holder.removeListEntryButton.setTag(locationEntityList.get(position));
         holder.changeWirelessPreferencesButton.setTag(locationEntityList.get(position));
+        holder.changeNameButton.setTag(locationEntityList.get(position));
+
         if(locationEntityList.get(position).isWirelessPreferences()) {
+            holder.changeWirelessPreferencesButton.setTextOn("ON");
             holder.changeWirelessPreferencesButton.toggle();
         }
+
+        if(promptsView !=null){
+        //setup button
+
+        }
+
+
+
 
 
 

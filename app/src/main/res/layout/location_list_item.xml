@@ -27,7 +27,7 @@
             android:id="@+id/modifyNameButton"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:onClick="abc"
+            android:onClick="modifyName"
             android:src="@drawable/cast_abc_scrubber_control_to_pressed_mtrl_005" />
 
         <ImageButton

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -24,6 +25,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -62,6 +64,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Converters CONVERTER;
     private AppDatabase appDatabase;
 
+    private LocationActivity locationActivity = new LocationActivity();
 
     private List<LocationEntity> locationEntityList;
 
@@ -253,6 +256,20 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.i("location",lo+" "+la);
                 if (mMap != null)
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo),19f));
+
+            Toast.makeText(getApplicationContext(), "Location updated", Toast.LENGTH_SHORT).show();
+
+
+            Location loc = new Location("dummyProvider");
+            loc.setLongitude(intent.getDoubleExtra("locationLa",0));
+            loc.setLongitude(intent.getDoubleExtra("locationLo",0));
+            if(locationActivity.locationRangeCheck(loc)){//need to check if relevant location {
+                //TURN ON RELATED WLAN/S
+            } else {
+
+            }
+
+
         }
     };
 
