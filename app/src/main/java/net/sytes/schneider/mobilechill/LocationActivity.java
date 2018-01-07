@@ -36,6 +36,7 @@ import net.sytes.schneider.mobilechill.database.Tasks.UpdateLocationTask;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -60,7 +61,7 @@ public class LocationActivity extends ListActivity {
 
                 case R.id.navigation_home:
                     Intent x = new Intent(getApplicationContext(), LocationActivity.class);
-                    startActivity(x);
+                    //startActivity(x);
 
                     return true;
 
@@ -100,12 +101,20 @@ public class LocationActivity extends ListActivity {
             e.printStackTrace();
         }
 
+        refreshListView(holderClass);
+
+
         final Button saveBtn = (Button) findViewById(R.id.button_id1);
-        final Button button = (Button) findViewById(R.id.button_id);
-        button.setOnClickListener(new View.OnClickListener() {
+        final Button getLocationButton = (Button) findViewById(R.id.button_id);
+
+
+        getLocationButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
+
                 //refresh
+                refreshListView(holderClass);
+                /*
                 try {
                     locationEntityList = new GetLocationsTask().execute(holderClass).get();
                 } catch (InterruptedException e) {
@@ -122,7 +131,7 @@ public class LocationActivity extends ListActivity {
                         Toast.makeText(LocationActivity.this, "location deleted", Toast.LENGTH_LONG);
                     }
                 });
-                listView.setAdapter(adapter);
+                listView.setAdapter(adapter); */
             }
         });
         saveBtn.setOnClickListener(c -> {
@@ -146,12 +155,14 @@ public class LocationActivity extends ListActivity {
                             holderClass.locationEntity = locationEntity;
                             holderClass.appDatabase = appDatabase;
                             insertLocationEntity(holderClass);
+                            Snackbar.make(findViewById(R.id.container), "New Location saved.",
+                                    Snackbar.LENGTH_SHORT)
+                                    .show();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Location already saved.", Toast.LENGTH_SHORT).show();
                         }
 
 
-                        Snackbar.make(findViewById(R.id.container), "New Location saved.",
-                                Snackbar.LENGTH_SHORT)
-                                .show();
 
                     }
                 }
@@ -179,18 +190,49 @@ public class LocationActivity extends ListActivity {
 
 
     }
+    public void refreshListView(HolderClass holderClass){
 
+        adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
+        //refresh
+        try {
+            locationEntityList = new GetLocationsTask().execute(holderClass).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        ListView listView = (ListView) findViewById(android.R.id.list);
+
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(LocationActivity.this, "location deleted", Toast.LENGTH_LONG);
+            }
+        });
+        listView.setAdapter(adapter);
+    }
 
     private boolean checkIfinDatabase(LocationEntity locationEntity) {
-        //locationEntityList
-        //TODO
-        List<LocationEntity> list = appDatabase.locationsDao().checkIfinDB(locationEntity.getLatidude(), locationEntity.getLongitude());
-        if (list == null || list.size() == 0) {
-
-            //if it is not in list return false
-            return false;
+        boolean inDatabase = false; //Default
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException e) {
+        } catch (InterruptedException e) {
         }
-        return true;
+
+        if (locationEntityList != null || locationEntityList.size() > 0) {
+            for(LocationEntity e:locationEntityList)
+                //if(e.getLongitude()==locationEntity.getLongitude() && e.getLatidude()==locationEntity.getLatidude()){
+            if(Objects.equals(e.getName(), locationEntity.getName()) || !(Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), e.getLatidude()))){
+                    inDatabase = true;
+                }
+        }
+        //not in list
+        Log.i("INFO","");
+        return inDatabase;
     }
 
 
@@ -207,17 +249,17 @@ public class LocationActivity extends ListActivity {
     }
 
     public void changeWirelessPreferences(View view){
-        ImageButton bt = (ImageButton) view;
-        LocationEntity locationEntity = (LocationEntity) bt.getTag();
         ToggleButton toggleButton = (ToggleButton) view;
+        LocationEntity locationEntity = (LocationEntity) toggleButton.getTag();
+
 
         if(locationEntity.isWirelessPreferences()){
             //AN
-            toggleButton.setChecked(false);
+            toggleButton.toggle();
             locationEntity.setWirelessPreferences(false);
         } else{
             //AUS
-            toggleButton.setChecked(true);
+            toggleButton.toggle();
             locationEntity.setWirelessPreferences(true);
         }
 
@@ -226,7 +268,14 @@ public class LocationActivity extends ListActivity {
         HolderClass holderClass = new HolderClass();
         holderClass.locationEntity = locationEntity;
         holderClass.appDatabase = appDatabase;
-        updateLocationEntity(holderClass);
+        //update does not update therefore delete+insert
+        removeLocationEntity(holderClass);
+        insertLocationEntity(holderClass);
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -234,6 +283,7 @@ public class LocationActivity extends ListActivity {
 
     public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
         locationEntityList = new GetLocationsTask().execute(holderClass).get();
+
     }
 
     public void removeLocationEntity(HolderClass holderClass) {
@@ -242,8 +292,9 @@ public class LocationActivity extends ListActivity {
 
     public void insertLocationEntity(HolderClass holderClass) {
         new InsertLocationTask().execute(holderClass);
+        refreshListView(holderClass);
     }
-
+    //TODO BUGGED
     public void updateLocationEntity(HolderClass holderClass){
         new UpdateLocationTask().execute(holderClass);
     }

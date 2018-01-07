@@ -60,8 +60,9 @@ public class LocationListAdapter extends ArrayAdapter<LocationEntity> {
         }
         holder.displayName.setText( locationEntityList.get(position).getDisplayName());
         holder.removeListEntryButton.setTag(locationEntityList.get(position));
+        holder.changeWirelessPreferencesButton.setTag(locationEntityList.get(position));
         if(locationEntityList.get(position).isWirelessPreferences()) {
-            holder.changeWirelessPreferencesButton.setChecked(true);
+            holder.changeWirelessPreferencesButton.toggle();
         }
 
 

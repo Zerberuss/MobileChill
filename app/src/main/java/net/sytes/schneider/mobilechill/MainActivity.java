@@ -104,13 +104,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 AppDatabase.class, "app-database").build();
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
-        try {
-            locationEntityList =  new GetLocationsTask().execute(holderClass).get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
+
 
 
         mTextMessage = (TextView) findViewById(R.id.message);

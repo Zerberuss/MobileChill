@@ -41,7 +41,6 @@ public class LocationConverter {
                 String name = list.get(0).getCountryName();
                 Log.i("my location", name);
                 locationEntity.setName(name);
-                locationEntity.setDisplayName(list.get(0).getFeatureName());
 
             }
 
