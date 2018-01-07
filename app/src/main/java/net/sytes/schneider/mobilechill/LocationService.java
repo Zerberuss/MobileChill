@@ -1,136 +1,153 @@
 package net.sytes.schneider.mobilechill;
 
-import android.app.Service;
+import android.annotation.SuppressLint;
+import android.app.job.JobParameters;
+import android.app.job.JobService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationManager;
-import android.os.Bundle;
-import android.os.IBinder;
-import android.support.v4.content.ContextCompat;
+import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.security.AccessControlException;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
 import java.util.Calendar;
+
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 /**
  * The service determines the current position via provider and checks if a home location is nearby
  * If this is the case, the position is again checked via GPS and adjusted (power-consuming)
  *
  */
-public class LocationService extends Service {
+
+public class LocationService extends JobService {
+    protected JobParameters mJobParameters;
+    private GoogleApiClient mGoogleApiClient;
+    LocationRequest mLocationRequest;
+
     private static final String TAG = "LocationService";
     static final String NEW_LOCATION_ACTION_TAG = "LocationService";
-    private static final int LOCATION_INTERVAL = 1000;  //5 * 60 * 1000;     //jede Minute aktuellen Standort abfragen
-    private static final float LOCATION_DISTANCE = 0;
+    private static final int LOCATION_INTERVAL = 60*1000;  //5 * 60 * 1000;     //jede Minute aktuellen Standort abfragen  TODO
+    private static final int LOCATION_FASTEST_INTERVAL = 30*1000;
     static final int TIME_DIFFERENCE_THRESHOLD = 1  * 1000;
     static final int TIME_DIFFERENCE_IGNORE_ACCURACY = 6 * 60  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
-    private LocationManager mLocationManager = null;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private Location mLastLocation = new Location("dummyprovider");;
 
-    private Location mLastLocation = null;
-
-    private class LocationListener implements android.location.LocationListener
-    {
-        public LocationListener(String provider)
-        {
-            Log.i(TAG, "LocationListener " + provider);
-            mLastLocation = new Location(provider);
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras)
-        {
-            Log.i(TAG, "onStatusChanged: " + provider);
-        }
-
-        @Override
-        public void onLocationChanged(Location location)
-        {
-            Log.i(TAG, "New passive location...");
-            if(isBetterLocation(mLastLocation, location)){
-                Log.i(TAG, "New set as new lastPosition!");
-                mLastLocation.set(location);
-                sendLocationBroadcast(mLastLocation);
-            }
-        }
-
-        @Override
-        public void onProviderDisabled(String provider)
-        {
-            Log.i(TAG, "onProviderDisabled: " + provider);
-        }
-
-        @Override
-        public void onProviderEnabled(String provider)
-        {
-            Log.i(TAG, "onProviderEnabled: " + provider);
-        }
-    }
-
-    LocationListener[] mLocationListeners = new LocationListener[] {
-            new LocationListener(LocationManager.NETWORK_PROVIDER)
-            //new LocationListener(LocationManager.GPS_PROVIDER)        for longer battery life, only the Network provider is active
-    };
-
-    @Override
-    public IBinder onBind(Intent arg0)
-    {
-        return null;
+    public LocationService() {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId)
-    {
-        Log.i(TAG, "onStartCommand");
-        super.onStartCommand(intent, flags, startId);
-        return START_STICKY;
+    public boolean onStartJob(JobParameters jobParameters) {
+        Log.e(TAG, "Start Job Called");
+        startLocationUpdates();
+        initializeBroadCastReceivers();
+        getLastLocation();
+        return true;
     }
 
     @Override
-    public void onCreate()
-    {
-        Log.i(TAG, "onCreate");
-        initializeLocationManager();
-        try {
-            mLocationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
-                    mLocationListeners[0]);
-            mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        } catch (java.lang.SecurityException ex) {
-            Log.e(TAG, "fail to request location update, ignore", ex);
-        } catch (IllegalArgumentException ex) {
-            Log.e(TAG, "network provider does not exist, " + ex.getMessage());
-        }
-        getFineLocation();
+    public boolean onStopJob(JobParameters jobParameters) {
+        Toast.makeText(this,
+                "MyJobService.onStopJob()",
+                Toast.LENGTH_SHORT).show();
+
+        unregisterReceiver(mNewFineInfoScanReceiver);
+        unregisterReceiver(mNewInfoScanReceiver);
+        return false;
     }
 
-    @Override
-    public void onDestroy()
-    {
-        Log.i(TAG, "Destroy");
-        super.onDestroy();
-        if (mLocationManager != null) {
-            for (int i = 0; i < mLocationListeners.length; i++) {
-                try {
-                    mLocationManager.removeUpdates(mLocationListeners[i]);
-                } catch (Exception ex) {
-                    Log.e(TAG, "fail to remove location listeners, ignore", ex);
+    // Trigger new location updates at interval
+    @SuppressLint("MissingPermission")
+    protected void startLocationUpdates() {
+
+        // Create the location request to start receiving updates
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        mLocationRequest.setInterval(LOCATION_INTERVAL);
+        mLocationRequest.setFastestInterval(LOCATION_FASTEST_INTERVAL);
+
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
+        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+                @Override
+                public void onLocationResult(LocationResult locationResult) {
+                    // do work here
+                    onLocationChanged(locationResult.getLastLocation());
                 }
-            }
+            },
+            Looper.myLooper());
+    }
+
+
+    @SuppressLint("MissingPermission")
+    public void getLastLocation() {
+        // Get last known recent location using new Google Play Services SDK (v11+)
+        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
+
+        getFineLocation();
+
+        locationClient.getLastLocation()
+            .addOnSuccessListener(new OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location location) {
+                    // GPS location can be null if GPS is switched off
+                    if (location != null) {
+                        onLocationChanged(location);
+                    }
+                }
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d(TAG, "Error trying to get last passive location");
+                    e.printStackTrace();
+                }
+            });
+    }
+
+
+    public void onLocationChanged(Location location) {
+        Log.i(TAG, "New passive location...");
+        if(isBetterLocation(mLastLocation, location)){
+            Log.i(TAG, "New passive set as new lastPosition!");
+            mLastLocation.set(location);
+            checkForHomeAndsendLocationBroadcast(mLastLocation);
         }
     }
+
+
+
 
     final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.i(TAG, "New Location Info will be sent out..");
-            getFineLocation();
+            getLastLocation();
         }
     };
 
@@ -138,7 +155,7 @@ public class LocationService extends Service {
         @Override
         public void onReceive(Context c, Intent intent) {
             //Log.i(TAG, "New Fine Location received...");
-            Location mLastGpsLocation = new Location(mLocationManager.getAllProviders().get(0));
+            Location mLastGpsLocation = new Location("dummyprovider");
 
             mLastGpsLocation.setTime(Calendar.getInstance().getTimeInMillis());
             mLastGpsLocation.setAltitude(intent.getDoubleExtra("locationAl",0));
@@ -149,12 +166,12 @@ public class LocationService extends Service {
             if(isBetterLocation(mLastLocation, mLastGpsLocation)){
                 //Log.i(TAG, "New set as new lastPosition!");
                 mLastLocation.set(mLastGpsLocation);
-                sendLocationBroadcast(mLastLocation);
+                checkForHomeAndsendLocationBroadcast(mLastLocation);
             }
         }
     };
 
-    void sendLocationBroadcast(Location location){
+    void checkForHomeAndsendLocationBroadcast(Location location){
         checkForHomeConnection(location);
 
         Intent newLocationIntent = new Intent(LocationService.NEW_LOCATION_ACTION_TAG);
@@ -165,22 +182,13 @@ public class LocationService extends Service {
         sendBroadcast(newLocationIntent);
     }
 
-    private void initializeLocationManager() {
+    private void initializeBroadCastReceivers() {
         Log.i(TAG, "initializeLocationManager");
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED) {
-            if (mLocationManager == null) {
-                mLocationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-                registerReceiver(mNewInfoScanReceiver,
-                        new IntentFilter(LocationService.ACTION_GET_NEW_LOCATION));
-                registerReceiver(mNewFineInfoScanReceiver,
-                        new IntentFilter(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG));
-            }
-        } else {
-            Toast.makeText(this, "Please confirm location access!", Toast.LENGTH_LONG).show();
-            throw new AccessControlException("No Permission to location for location service");
-        }
+        registerReceiver(mNewInfoScanReceiver,
+                new IntentFilter(LocationService.ACTION_GET_NEW_LOCATION));
+        registerReceiver(mNewFineInfoScanReceiver,
+                new IntentFilter(LocationFineService.NEW_FINE_LOCATION_ACTION_TAG));
     }
 
     void getFineLocation(){
@@ -206,19 +214,18 @@ public class LocationService extends Service {
             // More accurate and newer is always better.
             return true;
         } else if(isMoreAccurate) {
-
-            Log.w(TAG, "new pos timing new vs. old ->  "+ newLocation.getTime() +" - "+ oldLocation.getTime() + " > " + TIME_DIFFERENCE_THRESHOLD);
             // More accurate but not newer can lead to bad fix because of user movement.
             // Let us set a threshold for the maximum tolerance of time difference.
 
             // If time difference is not greater then allowed threshold we accept it.
-            if(timeDifference > TIME_DIFFERENCE_THRESHOLD) {
+            if(timeDifference > -TIME_DIFFERENCE_THRESHOLD) {
                 return true;
             }
         } else if(isNewer && timeDifference > TIME_DIFFERENCE_IGNORE_ACCURACY) {
+            //If five minutes went by, also accept inaccurate position
             return true;
         } else
-            Log.w(TAG, "new pos not accurate and not new enough: new ac vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
+            Log.w(TAG, "new pos is not new enough (" + timeDifference + " !> " + TIME_DIFFERENCE_IGNORE_ACCURACY + ") and not accurate: new ac vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
 
         return false;
     }

@@ -2,8 +2,11 @@ package net.sytes.schneider.mobilechill;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -47,6 +50,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
 
     private final String TAG = "MainActivity";
+    private int JOBID = 0;
     private TextView mTextMessage;
     private FrameLayout nearbyWifiList;
     private FloatingActionButton addHomeButton;
@@ -59,6 +63,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationDao locationDao;
     private Converters CONVERTER;
     private AppDatabase appDatabase;
+
+    JobScheduler jobScheduler;
 
     private boolean mapZoomed = false;
 
@@ -95,6 +101,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
                 AppDatabase.class, "app-database").allowMainThreadQueries().build();
@@ -184,11 +191,23 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_WIFI_STATE) ==
                         PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_BOOT_COMPLETED) ==
+                        PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.CHANGE_WIFI_STATE) ==
                         PackageManager.PERMISSION_GRANTED) {
 
-            if(!isMyServiceRunning(LocationService.class))
-                startService(new Intent(this, LocationService.class));
+
+            jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            JobInfo.Builder builder = new JobInfo.Builder( JOBID++, new ComponentName(getPackageName(), LocationService.class.getName()));
+            builder.setPeriodic(15 * 60 * 1000);
+            builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+
+            jobScheduler.schedule(builder.build());
+
+
+
+            /*if(!isMyServiceRunning(LocationService.class))
+                startService(new Intent(this, LocationService.class));*/
             if(!isMyServiceRunning(LocationFineService.class))
                 startService(new Intent(this, LocationFineService.class));
             if(!isMyServiceRunning(ConnectionService.class))
@@ -305,7 +324,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             if (locationTrackingSwitch.isChecked()){
                 if (mMap != null) {
                     if(!mapZoomed){                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 20f));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
                         mapZoomed = true;
                     }
                     else
@@ -341,9 +360,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void switchToConnections() {
         Intent i = new Intent(this, ConnectionsActivity.class);
-
-        unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
+        unregisterReceiver(mWifiScanReceiver);
+
 
 
         finish();  //Kill the activity from which you will go to next activity
