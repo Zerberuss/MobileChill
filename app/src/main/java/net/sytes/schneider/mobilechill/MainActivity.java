@@ -307,6 +307,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
             Toast.makeText(getApplicationContext(), "Location updated", Toast.LENGTH_SHORT).show();
+            
 
 
         }

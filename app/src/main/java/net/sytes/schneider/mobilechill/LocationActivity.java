@@ -3,8 +3,11 @@ package net.sytes.schneider.mobilechill;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
@@ -86,6 +89,8 @@ public class LocationActivity extends ListActivity {
     private List<LocationEntity> locationEntityList;
     private LocationConverter locationConverter = new LocationConverter();
     private LocationListAdapter adapter;
+    private ConnectionService connectionService;
+    private String connectedSSID = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,7 +126,8 @@ public class LocationActivity extends ListActivity {
             }
         });
         saveBtn.setOnClickListener(c -> {
-
+            registerReceiver(mWifiScanReceiver,
+                    new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
             LocationEntity locationEntity = new LocationEntity();
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -137,13 +143,16 @@ public class LocationActivity extends ListActivity {
                         LocationEntity locationEntity = locationConverter.convert2LocationEntity(location, geocoder);
 
                         //if not in db
-                        if (!checkIfinDatabase(locationEntity)) {
+                        if (!checkIfinDatabase(locationEntity) && connectedSSID !=null) {
+                            locationEntity.setWlanSSID(connectedSSID);
                             holderClass.locationEntity = locationEntity;
                             holderClass.appDatabase = appDatabase;
                             insertLocationEntity(holderClass);
                             Snackbar.make(findViewById(R.id.container), "New Location saved.",
                                     Snackbar.LENGTH_SHORT)
                                     .show();
+
+
                         } else {
                             Toast.makeText(getApplicationContext(), "Location already saved.", Toast.LENGTH_SHORT).show();
                         }
@@ -336,5 +345,14 @@ public class LocationActivity extends ListActivity {
         insertLocationEntity(holderClass);
         //new UpdateLocationTask().execute(holderClass);
     }
+
+    final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+
+            connectedSSID = intent.getStringExtra("wifiConnection");
+
+        }
+    };
 
 }

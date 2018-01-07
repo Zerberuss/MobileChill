@@ -23,8 +23,6 @@ public class LocationEntity {
     @ColumnInfo(name = "name")
     private String name;
 
-    @ColumnInfo(name="displayName")
-    private String displayName;
 
     //geolocation from google api
     @ColumnInfo(name = "latidude")
@@ -42,10 +40,8 @@ public class LocationEntity {
     @ColumnInfo(name = "modified")
     private Date modified;
 
-
-    //signalstrength
-    @ColumnInfo(name = "signalStrength")
-    private int signalStrengthEnum;
+    @ColumnInfo(name="WLANSSID")
+    private String wlanSSID;
 
 
     //wirelessPreferences
@@ -74,14 +70,6 @@ public class LocationEntity {
 
     public void setModified(Date modified) {
         this.modified = modified;
-    }
-
-    public int getSignalStrengthEnum() {
-        return signalStrengthEnum;
-    }
-
-    public void setSignalStrengthEnum(int signalStrengthEnum) {
-        this.signalStrengthEnum = signalStrengthEnum;
     }
 
     public boolean isWirelessPreferences() {
@@ -116,12 +104,12 @@ public class LocationEntity {
         this.longitude = longitude;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public String getWlanSSID() {
+        return wlanSSID;
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+    public void setWlanSSID(String wlanSSID) {
+        this.wlanSSID = wlanSSID;
     }
 }
 
