@@ -290,41 +290,27 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent){
+        public void onReceive(Context context, Intent intent) {
             //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
-            double lo = intent.getDoubleExtra("locationLo",0);
-            double la = intent.getDoubleExtra("locationLa",0);
+            double lo = intent.getDoubleExtra("locationLo", 0);
+            double la = intent.getDoubleExtra("locationLa", 0);
             if (locationTrackingSwitch.isChecked())
-                Log.i("location",lo+" "+la);
-                if (mMap != null)
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo),19f));
+                Log.i("location", lo + " " + la);
+            if (mMap != null) {
+                if (!mapZoomed) {                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
+                    mapZoomed = true;
+                } else
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
+
+            }
+
 
             Toast.makeText(getApplicationContext(), "Location updated", Toast.LENGTH_SHORT).show();
 
 
-            Location loc = new Location("dummyProvider");
-            loc.setLongitude(intent.getDoubleExtra("locationLa",0));
-            loc.setLongitude(intent.getDoubleExtra("locationLo",0));
-            if(locationActivity.locationRangeCheck(loc)){//need to check if relevant location {
-                //TURN ON RELATED WLAN/S
-            } else {
-
-            }
-
-
-            if (locationTrackingSwitch.isChecked()){
-                if (mMap != null) {
-                    if(!mapZoomed){                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
-                        mapZoomed = true;
-                    }
-                    else
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
-                }
-                else
-                    Log.e(TAG, "Map not found");
-            }
         }
+
     };
 
 
