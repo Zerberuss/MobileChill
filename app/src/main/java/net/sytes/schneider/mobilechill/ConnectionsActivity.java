@@ -48,7 +48,6 @@ public class ConnectionsActivity extends Activity {
             }
             return false;
         }
-
     };
 
 
