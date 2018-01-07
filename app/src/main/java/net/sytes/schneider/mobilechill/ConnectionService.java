@@ -9,8 +9,10 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -23,9 +25,12 @@ public class ConnectionService extends Service {
     private static final String TAG = "ConnectionService";
     static final String ACTION_BROADCAST_TAG = "ConnectionServiceBroadcast";
     static final String ACTION_SEND_INFO_TAG = "ConnectionServiceSendInfo";
+    static final String ACTION_CONFIGURE_WIFI = "ConnectionServiceConfigureWifi";
+
 
     private WifiManager mWifiManager = null;
     private String wifiConnection = "";
+    private String homeWifiSsid = "";
     private String wifiDetailsStr = "";
     private String wifiSSIDList = "";
 
@@ -44,7 +49,6 @@ public class ConnectionService extends Service {
         initializeConnectionManager();
     }
 
-
     final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
@@ -54,17 +58,24 @@ public class ConnectionService extends Service {
 
                 ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
                 NetworkInfo netInfo = cm.getActiveNetworkInfo();
-                if (netInfo != null && netInfo.isConnected())
-                    wifiConnection = (mWifiManager.getConnectionInfo().getSSID());
-                else if (netInfo != null && netInfo.isConnectedOrConnecting())
-                    wifiConnection = ("connecting");
-                else
-                    wifiConnection = ("no connection");
 
-                Log.i("MainActivity", "New Wifi Scan!\n");
+
+                if (netInfo == null)
+                    wifiConnection = ("no connection");
+                else if (netInfo.isConnected()){
+                    wifiConnection = (mWifiManager.getConnectionInfo().getSSID());
+                } else if (netInfo.isConnectedOrConnecting())
+                    wifiConnection = ("connecting");
+
+                Log.i(TAG, "New Wifi Scan!\n");
 
                 saveWifiDetails(mScanResults);
-                Toast.makeText(getApplicationContext(), "Connection info updated", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
+
+                if (netInfo != null && homeWifiSsid != null && !wifiConnection.equals(homeWifiSsid)){
+                    Log.i(TAG, "connectToWif! " );
+                    connectToWifiSsid(homeWifiSsid);
+                }
                 broadcastConnectionInfos();
             }
         }
@@ -75,14 +86,37 @@ public class ConnectionService extends Service {
         public void onReceive(Context c, Intent intent) {
             Log.w(TAG, "New Connection Info will be sent out..");
             boolean wifiOn = intent.getBooleanExtra("isWifiOn", true);
-            mWifiManager.setWifiEnabled(wifiOn);
-            broadcastConnectionInfos();
+            String ssid = intent.getStringExtra("ssid");
 
-            if(wifiOn){
+            mWifiManager.setWifiEnabled(wifiOn);
+
+            if(wifiOn) {
+                homeWifiSsid = ssid;
+
                 mWifiManager.startScan();
+                broadcastConnectionInfos();
             }
         }
     };
+
+    private void connectToWifiSsid(@NonNull String ssid){
+        try {
+            List<WifiConfiguration> wifiConfigurations = mWifiManager.getConfiguredNetworks();
+
+            for (WifiConfiguration wifiConfiguration : wifiConfigurations) {
+                if (wifiConfiguration.SSID.equals("\"" + ssid + "\"")) {
+                    mWifiManager.enableNetwork(wifiConfiguration.networkId, true);
+                    Log.i(TAG, "connectToWifi: will enable " + wifiConfiguration.SSID);
+                    mWifiManager.reconnect();
+                    wifiConnection = ssid;
+                    return; // return! (sometimes logcat showed me network-entries twice, which may will end in bugs
+                }
+            }
+        } catch (NullPointerException | IllegalStateException e) {
+            Log.e(TAG, "connectToWifi: Missing network configuration." + e);
+        }
+
+    }
 
     public void broadcastConnectionInfos(){
         Intent newConnetionIntent = new Intent(ACTION_BROADCAST_TAG);
@@ -121,8 +155,6 @@ public class ConnectionService extends Service {
     }
 
     private void initializeConnectionManager() {
-        Log.e(TAG, "initializeLocationManager");
-
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
