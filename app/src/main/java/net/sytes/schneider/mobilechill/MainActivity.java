@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -27,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -39,9 +41,11 @@ import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
 import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -65,8 +69,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private AppDatabase appDatabase;
 
     JobScheduler jobScheduler;
+    private LocationActivity locationActivity = new LocationActivity();
 
     private boolean mapZoomed = false;
+    private List<LocationEntity> locationEntityList;
+
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -104,42 +111,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "app-database").allowMainThreadQueries().build();
-       //appDatabase = Room.databaseBuilder(getApplicationContext(),AppDatabase.class, "app-database").build();
+                AppDatabase.class, "app-database").build();
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
 
-        /*
 
-                DEVELOPING
-                CHANGE WHEN LIVE
-
-         */
-        //create DB
-
-       /* mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        Task<Location> myLocTask = mFusedLocationClient.getLastLocation();
-
-        Location myLoc = myLocTask.getResult();
-
-        Log.d("LOCATION DATA:",myLoc.toString());*/
-
-        //remove when live
-        Date today = new Date();
-        today.setTime(0);
-        LocationEntity testLoc = new LocationEntity();
-        testLoc.setName("Graz");
-
-        appDatabase.locationsDao().insertLocation(testLoc);
-        System.out.print("LocationEntity has been added to DB");
-        Log.i("INFO", "LocationEntity has been added");
-        List<LocationEntity> locationEntityList = appDatabase.locationsDao().getAllLocations();
-        Log.i("INFO", locationEntityList.toString());
-
-        /*
-
-            DO NOT USE DB ON MAIN THREAD
-
-         */
 
         mTextMessage = (TextView) findViewById(R.id.message);
         nearbyWifiList = (FrameLayout) findViewById(R.id.nearbyWifiList);
@@ -318,6 +294,24 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
             double lo = intent.getDoubleExtra("locationLo",0);
             double la = intent.getDoubleExtra("locationLa",0);
+            if (locationTrackingSwitch.isChecked())
+                Log.i("location",lo+" "+la);
+                if (mMap != null)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo),19f));
+
+            Toast.makeText(getApplicationContext(), "Location updated", Toast.LENGTH_SHORT).show();
+
+
+            Location loc = new Location("dummyProvider");
+            loc.setLongitude(intent.getDoubleExtra("locationLa",0));
+            loc.setLongitude(intent.getDoubleExtra("locationLo",0));
+            if(locationActivity.locationRangeCheck(loc)){//need to check if relevant location {
+                //TURN ON RELATED WLAN/S
+            } else {
+
+            }
+
+
             if (locationTrackingSwitch.isChecked()){
                 if (mMap != null) {
                     if(!mapZoomed){                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
@@ -346,7 +340,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void switchToHomeLocations() {
         Intent i = new Intent(this, LocationActivity.class);
-
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
 
