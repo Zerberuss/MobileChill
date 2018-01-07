@@ -45,6 +45,8 @@ public class LocationService extends JobService {
     static final int TIME_DIFFERENCE_IGNORE_ACCURACY = 6 * 60  * 1000;
     static final String ACTION_GET_NEW_LOCATION = "LocationServiceGetInfo";
 
+    private LocationCallback mLocationCallback;
+
     private Location mLastLocation = new Location("dummyprovider");
 
 
@@ -99,21 +101,22 @@ public class LocationService extends JobService {
         SettingsClient settingsClient = LocationServices.getSettingsClient(this);
         settingsClient.checkLocationSettings(locationSettingsRequest);
 
+        mLocationCallback = new LocationCallback(){
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                // do work here
+                onLocationChanged(locationResult.getLastLocation());
+            }
+        };
+
         // new Google API SDK v11 uses getFusedLocationProviderClient(this)
-        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
-                @Override
-                public void onLocationResult(LocationResult locationResult) {
-                    // do work here
-                    onLocationChanged(locationResult.getLastLocation());
-                }
-            },
-            Looper.myLooper());
+        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, mLocationCallback,
+                Looper.myLooper());
     }
 
     private void stopLocationUpdates() {
         FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
-        locationClient.removeLocationUpdates(new LocationCallback());
-        mLocationRequest = null;
+        locationClient.removeLocationUpdates(mLocationCallback);
     }
 
 

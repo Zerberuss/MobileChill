@@ -348,7 +348,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         unregisterReceiver(mWifiScanReceiver);
         unregisterReceiver(mLocationReceiver);
-        setGettingContinousUpdates(false);
 
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
@@ -358,8 +357,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         Intent i = new Intent(this, ConnectionsActivity.class);
         unregisterReceiver(mLocationReceiver);
         unregisterReceiver(mWifiScanReceiver);
-
-
 
         finish();  //Kill the activity from which you will go to next activity
         startActivity(i);
