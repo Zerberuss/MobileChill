@@ -474,4 +474,25 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         return "";
     }
 
+
+    public boolean isTurnedOn(){
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        for(LocationEntity e : locationEntityList){
+            if(e.isWirelessPreferences())
+            {
+              return e.isWirelessPreferences();
+            }
+        }
+
+        return false;
+    }
+
 }
