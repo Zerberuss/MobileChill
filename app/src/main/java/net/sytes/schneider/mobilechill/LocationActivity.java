@@ -246,7 +246,7 @@ public class LocationActivity extends ListActivity {
 
         if (locationEntityList != null || locationEntityList.size() > 0) {
             for (LocationEntity e : locationEntityList)
-                if (!(Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), e.getLatidude()))) {
+                if ((Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), locationEntity.getLongitude()))) {
                     inDatabase = true;
                 }
         }

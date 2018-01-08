@@ -36,7 +36,10 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
@@ -80,7 +83,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private WifiManager wifiManager;
     private LocationConverter locationConverter = new LocationConverter();
 
-
+    private ArrayList<Marker> mMarkers = new ArrayList<>();
 
 
 
@@ -241,6 +244,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         mMap = googleMap;
         try {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -250,11 +260,33 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setMyLocationEnabled(true);
             LatLng graz = new LatLng(47.074458, 15.438041);                 //  Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
+            mMap.clear();
+            if(locationEntityList.size()>0){
+            for (LocationEntity e : locationEntityList) {
+                LatLng ll = new LatLng(e.getLatidude(), e.getLongitude());
+
+
+                BitmapDescriptor bitmapMarker;
+
+                bitmapMarker = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+
+
+                mMarkers.add(mMap.addMarker(new MarkerOptions().position(ll).title(e.getName())
+                        .snippet("saved Location")));
+
+                Log.i(TAG,"Setting up marker for position:"+ll+"  " +mMarkers.get(mMarkers.size()-1).getId());
+            }
+            }else {
+                Log.i("INFO","NO LOCATIONS FOUND");
+            }
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-    }
+
+        }
+
+
 
     @Override
     protected void onPause(){
@@ -323,7 +355,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
             if (locationEntity.isPresent()) {
-                //TURN ON RELATED WLAN/S
+                //TURN ON RELATED WLAN
                 wifiManager.setWifiEnabled(true);
                 List<ScanResult> results = wifiManager.getScanResults();
                 List<String> strResults = new ArrayList<>();
