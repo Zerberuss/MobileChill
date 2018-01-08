@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">MobileChill</string>
-    <string name="app_version">0.0</string>
-    <string name="title_activity_main">Map</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="app_version">1.0</string>
+    <string name="title_activity_main">Home Locations</string>
+    <string name="title_dashboard">Map</string>
+    <string name="title_HomeLocation">WIFI</string>
 </resources>

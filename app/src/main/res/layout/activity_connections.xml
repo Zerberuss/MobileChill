@@ -10,10 +10,7 @@ android:id="@+id/container"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
 android:orientation="vertical"
-tools:context="net.sytes.schneider.mobilechill.MainActivity">
-
-
-
+tools:context="net.sytes.schneider.mobilechill.ConnectionsActivity">
 
     <FrameLayout
     android:id="@+id/content"
@@ -21,19 +18,10 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
     android:layout_height="0dp"
     android:layout_weight="1">
 
-        <fragment
-            android:id="@+id/map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:context="net.sytes.schneider.mobilechill.MainActivity" />
-
         <FrameLayout
-            android:id="@+id/addWifiLocation"
+            android:id="@+id/dashboard"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
-            android:layout_margin="30dp"
-            android:visibility="visible">
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,7 +35,7 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
 
                     <TextView
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="81dp"
                         android:layout_marginBottom="@dimen/activity_vertical_margin"
                         android:layout_marginLeft="@dimen/activity_horizontal_margin"
                         android:layout_marginRight="@dimen/activity_horizontal_margin"
@@ -65,7 +53,7 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                     <TextView
                         android:id="@+id/wifidetails"
                         android:layout_width="match_parent"
-                        android:layout_height="274dp"
+                        android:layout_height="match_parent"
                         android:layout_marginBottom="@dimen/activity_vertical_margin"
                         android:layout_marginLeft="@dimen/activity_horizontal_margin"
                         android:layout_marginRight="@dimen/activity_horizontal_margin"
@@ -75,16 +63,7 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                         android:text="wifiDetails"
                         android:textAlignment="textStart"
                         android:textAppearance="@style/TextAppearance.AppCompat.Title"
-                        android:textSize="18sp" />
-
-                    <Button
-                        android:id="@+id/okButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="bottom|center"
-                        android:layout_weight="1"
-                        android:elevation="11dp"
-                        android:text="OK" />
+                        android:textSize="14sp" />
 
                 </android.support.v7.widget.CardView>
 
@@ -100,47 +79,20 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
 
             <android.support.v7.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" >
+                android:layout_height="match_parent"
+                app:cardElevation="17dp">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/message"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal">
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:layout_marginRight="@dimen/activity_horizontal_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:text="@string/title_HomeLocation"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
-                    <TextView
-                        android:id="@+id/message"
-                        android:layout_width="202dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/activity_vertical_margin"
-                        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                        android:layout_marginRight="@dimen/activity_horizontal_margin"
-                        android:layout_marginTop="@dimen/activity_vertical_margin"
-                        android:layout_weight="1"
-                        android:text="@string/title_activity_main"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
-
-                    <Switch
-                        android:id="@+id/locationTrackingSwitch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:checked="true"
-                        android:splitTrack="true"
-                        android:switchPadding="12dp"
-                        android:text="Update Map"
-                        android:textAlignment="textStart"
-                        android:textSize="18sp" />
-
-                    <TextView
-                        android:id="@+id/space"
-                        android:layout_width="20dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/activity_vertical_margin"
-                        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                        android:layout_marginRight="@dimen/activity_horizontal_margin"
-                        android:layout_marginTop="@dimen/activity_vertical_margin"
-                        android:layout_weight="1"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
-                </LinearLayout>
             </android.support.v7.widget.CardView>
 
             <android.support.v7.widget.CardView
@@ -180,31 +132,12 @@ tools:context="net.sytes.schneider.mobilechill.MainActivity">
                         android:id="@+id/wifistatus"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:visibility="visible"
                         app:srcCompat="@mipmap/ic_launcher" />
-
                 </LinearLayout>
 
             </android.support.v7.widget.CardView>
         </LinearLayout>
-
-        <FrameLayout
-            android:id="@+id/addFrame"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="visible">
-
-            <android.support.design.widget.FloatingActionButton
-                android:id="@+id/addHomeButton"
-                android:layout_width="58dp"
-                android:layout_height="52dp"
-                android:layout_gravity="bottom|right"
-                android:layout_margin="30dp"
-                android:layout_marginBottom="0dp"
-                android:clickable="true"
-                android:src="@android:drawable/ic_input_add"
-                app:elevation="20dp" />
-
-        </FrameLayout>
 
     </FrameLayout>
 

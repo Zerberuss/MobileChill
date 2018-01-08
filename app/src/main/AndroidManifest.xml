@@ -5,13 +5,14 @@
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
          Google Maps Android API v2, but you must specify either coarse or fine
-         location permissions for the 'MyLocation' functionality. 
+     locationEntitytion permissions for the 'MyLocation' functionality.
     -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -42,6 +43,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ConnectionsActivity"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".LocationActivity"
+            android:label="@string/app_name">
+        </activity>
+
+        <service android:name=".LocationService"
+            android:process=":location_service"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true"/>
+        <service android:name=".LocationFineService" android:process=":location_fine_service" />
+
+        <service android:name=".ConnectionService" android:process=":connection_service" />
+
     </application>
 
 </manifest>
