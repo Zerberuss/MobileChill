@@ -21,7 +21,10 @@ import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * This Service aktivates and deaktivates the wifi and sends out broadcasts with wifi information
+ *
+ */
 public class ConnectionService extends Service {
     private static final String TAG = "ConnectionService";
     static final String ACTION_BROADCAST_TAG = "ConnectionServiceBroadcast";
@@ -60,14 +63,7 @@ public class ConnectionService extends Service {
                 NetworkInfo netInfo = cm.getActiveNetworkInfo();
 
 
-                if (netInfo == null){
-                    wifiConnection = ("no connection");
 
-                }
-                else if (netInfo.isConnected()){
-                    wifiConnection = (mWifiManager.getConnectionInfo().getSSID());
-                } else if (netInfo.isConnectedOrConnecting())
-                    wifiConnection = ("connecting");
 
                 Log.i(TAG, "New Wifi Scan!\n");
 
@@ -89,13 +85,17 @@ public class ConnectionService extends Service {
             boolean wifiOn = intent.getBooleanExtra("isWifiOn", true);
             Log.w(TAG, "New Connection Info will be sent out.. " + wifiOn);
 
-            if(wifiOn != wifiStatus) {
-                mWifiManager.setWifiEnabled(wifiOn);
-                wifiStatus= wifiOn;
-                homeWifiSsid = mWifiManager.getConnectionInfo().getSSID();
-                wifiConnection = mWifiManager.getConnectionInfo().getSSID();
+            int status = mWifiManager.getWifiState();
+            if(status != 0 && status != 1)       //disabled
+                wifiStatus = true;
 
-                mWifiManager.startScan();
+            if(wifiOn != wifiStatus) {
+                wifiStatus= wifiOn;
+
+                mWifiManager.setWifiEnabled(wifiOn);
+                if (wifiOn)
+                    mWifiManager.startScan();
+
                 if(intent.getExtras()!= null && intent.getExtras().containsKey("ssid"))
                     homeWifiSsid = intent.getStringExtra("ssid");
             }
@@ -124,12 +124,31 @@ public class ConnectionService extends Service {
     }
 
     public void broadcastConnectionInfos(){
+        int status = mWifiManager.getWifiState();
+        if(status < 2)
+            wifiConnection = ("no connection");
+        else if (status == 3){
+            wifiConnection = (mWifiManager.getConnectionInfo().getSSID());
+            if(wifiConnection.equals("<unknown ssid>"))
+                wifiConnection=homeWifiSsid;
+        } else if (status == 2)
+            wifiConnection = ("connecting");
+        else
+            wifiConnection = homeWifiSsid;
+
+
         Intent newConnetionIntent = new Intent(ACTION_BROADCAST_TAG);
-        newConnetionIntent.putExtra("wifiConnection", wifiConnection);
+        if (wifiConnection.equals("<unknown ssid>"))
+            newConnetionIntent.putExtra("wifiConnection", "configuring WIFI");
+        else
+            newConnetionIntent.putExtra("wifiConnection", wifiConnection);
+
         newConnetionIntent.putExtra("wifiDetailsStr", wifiDetailsStr);
         if(wifiSSIDList!=null)
             newConnetionIntent.putExtra("wifiSSIDList", wifiSSIDList);
         newConnetionIntent.putExtra("wifiSSID", homeWifiSsid);
+
+        Log.i(TAG, "Sending connection broadcast.");
         sendBroadcast(newConnetionIntent);
     }
 

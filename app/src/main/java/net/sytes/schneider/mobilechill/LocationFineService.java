@@ -46,6 +46,7 @@ public class LocationFineService extends Service {
 
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
+    private FusedLocationProviderClient locationClient;
 
     @Override
     public void onCreate() {
@@ -56,6 +57,7 @@ public class LocationFineService extends Service {
                 new IntentFilter(LocationFineService.ACTION_GET_NEW_FINE_LOCATION));
         registerReceiver(mSetKeepSendingReceiver,
                 new IntentFilter(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES));
+
     }
 
     @Nullable
@@ -92,8 +94,10 @@ public class LocationFineService extends Service {
             }
         };
 
+        locationClient=getFusedLocationProviderClient(this);
+
         // new Google API SDK v11 uses getFusedLocationProviderClient(this)
-        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, mLocationCallback,
+        locationClient.requestLocationUpdates(mLocationRequest, mLocationCallback,
                 Looper.myLooper());
     }
 
@@ -122,13 +126,13 @@ public class LocationFineService extends Service {
     }
 
     private void stopLocationUpdates() {
-        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
         locationClient.removeLocationUpdates(mLocationCallback);
+        locationClient=null;
     }
 
     public void onLocationChanged(Location location) {
         if (location != null) {
-            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
+            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude() + "KEEP GETTING: " + KEEP_SENDING_UPDATES);
             if(!KEEP_SENDING_UPDATES)
                 stopLocationUpdates();
 
@@ -147,11 +151,14 @@ public class LocationFineService extends Service {
     final BroadcastReceiver mSetKeepSendingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.i(TAG, "Configuring Keep Sending Setting");
             boolean newKeepsending = intent.getBooleanExtra("keepSending",false);
+
+            Log.i(TAG, "Configuring Keep Sending Setting: " + newKeepsending);
+
             if(newKeepsending && !KEEP_SENDING_UPDATES) {
                 KEEP_SENDING_UPDATES = true;
-                startLocationUpdates();
+                if(locationClient == null)
+                    startLocationUpdates();
             }
             KEEP_SENDING_UPDATES = newKeepsending;
         }

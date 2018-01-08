@@ -62,6 +62,7 @@ public class LocationService extends JobService {
     private List<LocationEntity> locationEntityList;
 
     boolean leftLocation = false;
+    boolean allLocationsDisabled = false;
 
     private LocationConverter locationConverter = new LocationConverter();
 
@@ -180,7 +181,9 @@ public class LocationService extends JobService {
         if(isBetterLocation(mLastLocation, location)){
             Log.i(TAG, "New passive set as new lastPosition!");
             mLastLocation.set(location);
-            checkForHomeAndsendLocationBroadcast(mLastLocation);
+            if(!allLocationsDisabled)
+                checkForHomeAndsendLocationBroadcast(mLastLocation);
+
         }
     }
 
@@ -288,6 +291,14 @@ public class LocationService extends JobService {
         boolean isHome = false;
         boolean activateWlan = true;
 
+        checkIfAllLocationsAreDisabled();
+        if(allLocationsDisabled)
+            return;
+
+        if(loc.getAccuracy()>50){
+            getFineLocation();
+        }
+
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
 
@@ -318,8 +329,9 @@ public class LocationService extends JobService {
             e.printStackTrace();
         }
         if (locationEntityList != null && locationEntityList.size() > 0) {
-
             for (LocationEntity e : locationEntityList) {
+
+
                 Location locationInDB = locationConverter.convert2Location(e);
                 float distanceInMeters = locationInDB.distanceTo(newLocation);
                 boolean result = distanceInMeters < 300;
@@ -329,9 +341,30 @@ public class LocationService extends JobService {
                 }
             }
         }
-
         return Optional.empty();
 
+    }
+
+    public void checkIfAllLocationsAreDisabled(){
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+
+        allLocationsDisabled = true;
+
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (locationEntityList != null && locationEntityList.size() > 0) {
+            for (LocationEntity e : locationEntityList) {
+                if (e.isWirelessPreferences()){
+                    allLocationsDisabled = false;
+                    return;
+                }
+
+            }
+        }
     }
 
     public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {

@@ -356,53 +356,9 @@ public class LocationActivity extends ListActivity {
         refreshListView(holderClass);
     }
 
-    //TODO BUGGED
     public void updateLocationEntity(HolderClass holderClass) {
         removeLocationEntity(holderClass);
         insertLocationEntity(holderClass);
-        //new UpdateLocationTask().execute(holderClass);
     }
-
-    /*
-    final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
-            double lo = intent.getDoubleExtra("locationLo", 0);
-            double la = intent.getDoubleExtra("locationLa", 0);
-
-            Location loc = new Location("dummyProvider");
-            loc.setLongitude(intent.getDoubleExtra("locationLa", 0));
-            loc.setLongitude(intent.getDoubleExtra("locationLo", 0));
-            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
-            if (locationEntity.isPresent()) {//need to check if relevant location {
-                //TURN ON RELATED WLAN/S
-                wifiManager.setWifiEnabled(true);
-                List<ScanResult> results = wifiManager.getScanResults();
-                List<String> strResults = new ArrayList<>();
-                results.forEach(scanResult -> {
-                    strResults.add(scanResult.SSID);
-                });
-
-                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
-                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
-                    sendBroadcast(newConnectionIntent);
-                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
-                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
-
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
-
-            }
-
-
-        }
-
-    }; */
-
-
-
 
 }
