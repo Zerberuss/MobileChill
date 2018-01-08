@@ -13,6 +13,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -51,13 +52,20 @@ import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
+import net.sytes.schneider.mobilechill.database.Tasks.Send2ServerTask;
 import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 
@@ -94,8 +102,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Marker> mMarkers = new ArrayList<>();
 
     private Location lastLocation;
-
-
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -136,6 +142,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
 
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
 
         wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
         mTextMessage = (TextView) findViewById(R.id.message);
@@ -171,6 +182,39 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
+        if (locationEntityList.size() > 0) {
+            JSONArray jsonList = new JSONArray();
+            int counter=0;
+            locationEntityList.forEach(e -> {
+                try {
+                    JSONObject listObject = new JSONObject();
+
+                    listObject.put("name", e.getName());
+                    listObject.put("SSID", e.getWlanSSID());
+                    listObject.put("Lat", e.getLatidude());
+                    listObject.put("Long", e.getLongitude());
+                    listObject.put("prefernces", e.isWirelessPreferences());
+                    Log.i("JSON", "CREATED JSON OBJECT");
+
+                    jsonList.put(listObject);
+                } catch (JSONException e1) {
+                    Log.i("ERROR", e1.getMessage());
+                }
+
+
+            });
+            new Send2ServerTask().execute(jsonList.toString());
+
+
+        } else {
+            try {
+                getLocationEntities(holderClass);
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.«
         if (mMap == null) {
             try {
@@ -185,7 +229,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Check permissions and start Location Service
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED &&
+                PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_NETWORK_STATE) ==
@@ -199,20 +243,20 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
             jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            JobInfo.Builder builder = new JobInfo.Builder( JOBID++, new ComponentName(getPackageName(), LocationService.class.getName()));
+            JobInfo.Builder builder = new JobInfo.Builder(JOBID++, new ComponentName(getPackageName(), LocationService.class.getName()));
             builder.setPeriodic(15 * 60 * 1000);
             builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
 
             jobScheduler.schedule(builder.build());
 
-            if(!isMyServiceRunning(LocationFineService.class))
+            if (!isMyServiceRunning(LocationFineService.class))
                 startService(new Intent(this, LocationFineService.class));
-            if(!isMyServiceRunning(ConnectionService.class))
+            if (!isMyServiceRunning(ConnectionService.class))
                 startService(new Intent(this, ConnectionService.class));
             Log.i("MAIN", "Started Services");
 
         } else {
-            ActivityCompat.requestPermissions(this, new String[] {
+            ActivityCompat.requestPermissions(this, new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION,
                             Manifest.permission.ACCESS_NETWORK_STATE,
@@ -265,23 +309,23 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng graz = new LatLng(47.074458, 15.438041);                 //  Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
             mMap.clear();
-            if(locationEntityList.size()>0){
-            for (LocationEntity e : locationEntityList) {
-                LatLng ll = new LatLng(e.getLatidude(), e.getLongitude());
+            if (locationEntityList.size() > 0) {
+                for (LocationEntity e : locationEntityList) {
+                    LatLng ll = new LatLng(e.getLatidude(), e.getLongitude());
 
 
-                BitmapDescriptor bitmapMarker;
+                    BitmapDescriptor bitmapMarker;
 
-                bitmapMarker = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    bitmapMarker = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
 
 
-                mMarkers.add(mMap.addMarker(new MarkerOptions().position(ll).title(e.getName())
-                        .snippet("saved Location")));
+                    mMarkers.add(mMap.addMarker(new MarkerOptions().position(ll).title(e.getName())
+                            .snippet("saved Location")));
 
-                Log.i(TAG,"Setting up marker for position:"+ll+"  " +mMarkers.get(mMarkers.size()-1).getId());
-            }
-            }else {
-                Log.i("INFO","NO LOCATIONS FOUND");
+                    Log.i(TAG, "Setting up marker for position:" + ll + "  " + mMarkers.get(mMarkers.size() - 1).getId());
+                }
+            } else {
+                Log.i("INFO", "NO LOCATIONS FOUND");
             }
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
@@ -305,7 +349,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-
     @Override
     protected void onPause(){
         setGettingContinousUpdates(false);
@@ -313,7 +356,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
         mapZoomed = false;
 
@@ -323,18 +366,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    final void getNewLocation(){
+    final void getNewLocation() {
         Intent newLocationIntent = new Intent(LocationService.ACTION_GET_NEW_LOCATION);
         sendBroadcast(newLocationIntent);
     }
 
-    final void setGettingContinousUpdates(boolean setting){
+    final void setGettingContinousUpdates(boolean setting) {
         Intent newKeepGetingLocUpdatesIntent = new Intent(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES);
         newKeepGetingLocUpdatesIntent.putExtra("keepSending", setting);
         sendBroadcast(newKeepGetingLocUpdatesIntent);
     }
 
-    final void getNewWifiData(){
+    final void getNewWifiData() {
         Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
         sendBroadcast(newConnectionIntent);
     }
@@ -356,13 +399,40 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
             double lo = intent.getDoubleExtra("locationLo", 0);
             double la = intent.getDoubleExtra("locationLa", 0);
-            if (locationTrackingSwitch.isChecked()){
-                if (mMap != null) {
-                    if (!mapZoomed) {                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
-                        mapZoomed = true;
-                    } else
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
+            if (locationTrackingSwitch.isChecked())
+                Log.i("location", lo + " " + la);
+            if (mMap != null) {
+                if (!mapZoomed) {                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
+                    mapZoomed = true;
+                } else
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
+
+            }
+            HolderClass holderClass = new HolderClass();
+            holderClass.appDatabase = appDatabase;
+            Location loc = new Location("dummyProvider");
+            loc.setLatitude(la);
+            loc.setLongitude(lo);
+            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
+
+
+            if (locationEntity.isPresent()) {
+                //TURN ON RELATED WLAN
+                wifiManager.setWifiEnabled(true);
+                List<ScanResult> results = wifiManager.getScanResults();
+                List<String> strResults = new ArrayList<>();
+                results.forEach(scanResult -> {
+                    strResults.add(scanResult.SSID);
+                });
+                Log.i("loc ssid", locationEntity.get().getWlanSSID());
+                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
+                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
+                    sendBroadcast(newConnectionIntent);
+                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
+                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
+
                 }
             }
             lastLocation.setTime(Calendar.getInstance().getTimeInMillis());
@@ -475,6 +545,23 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
+    public boolean wlanInRange(List<String> stringList, LocationEntity locationEntity) {
+        if (stringList.size() > 0 && stringList != null) {
+
+            for (String s : stringList) {
+                Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                s = "\"" + s + "\"";
+                if (s.equals(locationEntity.getWlanSSID())) {
+                    Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                    return true;
+                }
+            }
+
+        }
+        return false;
+    }
+
+
     public boolean isTurnedOn(){
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
@@ -493,6 +580,33 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         return false;
+    }
+
+    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (locationEntityList != null && locationEntityList.size() > 0) {
+
+            for (LocationEntity e : locationEntityList) {
+                Location locationInDB = locationConverter.convert2Location(e);
+                float distanceInMeters = locationInDB.distanceTo(newLocation);
+                boolean result = distanceInMeters < 300;
+                if (result) {
+                    Log.i("INFO", "IN RANGE");
+                    return Optional.ofNullable(e);
+                }
+            }
+        }
+
+
+        return Optional.empty();
+
+
     }
 
 }

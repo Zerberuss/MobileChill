@@ -178,32 +178,7 @@ public class LocationActivity extends ListActivity {
         return "";
     }
 
-    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
-        HolderClass holderClass = new HolderClass();
-        holderClass.appDatabase = appDatabase;
-        try {
-            getLocationEntities(holderClass);
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (locationEntityList != null && locationEntityList.size() > 0) {
 
-            for (LocationEntity e : locationEntityList) {
-                Location locationInDB = locationConverter.convert2Location(e);
-                float distanceInMeters = locationInDB.distanceTo(newLocation);
-                boolean result = distanceInMeters < 300;
-                if (result) {
-                    Log.i("INFO", "IN RANGE");
-                    return Optional.ofNullable(e);
-                }
-            }
-        }
-
-
-        return Optional.empty();
-
-
-    }
 
     public void refreshListView(HolderClass holderClass) {
         Log.i("INFO", locationEntityList.toString());
