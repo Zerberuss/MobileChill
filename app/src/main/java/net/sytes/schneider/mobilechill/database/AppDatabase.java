@@ -11,7 +11,7 @@ import net.sytes.schneider.mobilechill.database.Converter.Converters;
 /**
  * Created by Timo Hasenbichler on 16.12.2017.
  */
-@Database(entities = {LocationEntity.class,WirelessNetwork.class}, version = 5)
+@Database(entities = {LocationEntity.class,WirelessNetwork.class}, version = 6)
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase{
     public abstract LocationDao locationsDao();

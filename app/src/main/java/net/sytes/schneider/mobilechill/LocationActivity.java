@@ -3,11 +3,16 @@ package net.sytes.schneider.mobilechill;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -29,6 +34,8 @@ import android.widget.ToggleButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
@@ -40,9 +47,11 @@ import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
 import net.sytes.schneider.mobilechill.database.Tasks.RemoveLocationTask;
 import net.sytes.schneider.mobilechill.database.Tasks.UpdateLocationTask;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -73,6 +82,7 @@ public class LocationActivity extends ListActivity {
 
                 case R.id.navigation_notifications:
                     Intent i = new Intent(getApplicationContext(), ConnectionsActivity.class);
+
                     startActivity(i);
                     return true;
             }
@@ -86,6 +96,9 @@ public class LocationActivity extends ListActivity {
     private List<LocationEntity> locationEntityList;
     private LocationConverter locationConverter = new LocationConverter();
     private LocationListAdapter adapter;
+    private ConnectionService connectionService;
+    private String connectedSSID = null;
+    private WifiManager wifiManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,24 +107,23 @@ public class LocationActivity extends ListActivity {
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setSelectedItemId(R.id.navigation_home);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
+        wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
         appDatabase = Room.databaseBuilder(getApplicationContext(),
                 AppDatabase.class, "app-database").build();
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
+
         try {
             getLocationEntities(holderClass);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
 
         refreshListView(holderClass);
 
 
-        final Button saveBtn = (Button) findViewById(R.id.button_id1);
-        final Button getLocationButton = (Button) findViewById(R.id.button_id);
+        final Button saveBtn = (Button) findViewById(R.id.button_save);
+        final Button getLocationButton = (Button) findViewById(R.id.button_load);
 
 
         getLocationButton.setOnClickListener(new View.OnClickListener() {
@@ -136,28 +148,52 @@ public class LocationActivity extends ListActivity {
                     if (location != null) {
                         LocationEntity locationEntity = locationConverter.convert2LocationEntity(location, geocoder);
 
+
                         //if not in db
-                        if (!checkIfinDatabase(locationEntity)) {
+                        if (!checkIfinDatabase(locationEntity) && !getConnectedSSID().equals("")) {
+                            locationEntity.setWlanSSID(getConnectedSSID());
                             holderClass.locationEntity = locationEntity;
                             holderClass.appDatabase = appDatabase;
                             insertLocationEntity(holderClass);
                             Snackbar.make(findViewById(R.id.container), "New Location saved.",
                                     Snackbar.LENGTH_SHORT)
                                     .show();
+
+
                         } else {
                             Toast.makeText(getApplicationContext(), "Location already saved.", Toast.LENGTH_SHORT).show();
                         }
 
 
-
                     }
+
+                    refreshListView(holderClass);
+
                 }
             });
         });
 
     }
 
-    public boolean locationRangeCheck(Location newLocation) {
+    public String getConnectedSSID() {
+
+        if (wifiManager.getConnectionInfo() != null) {
+            return wifiManager.getConnectionInfo().getSSID();
+
+        }
+
+
+        return "";
+    }
+
+    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         if (locationEntityList != null && locationEntityList.size() > 0) {
 
             for (LocationEntity e : locationEntityList) {
@@ -166,25 +202,24 @@ public class LocationActivity extends ListActivity {
                 boolean result = distanceInMeters < 300;
                 if (result) {
                     Log.i("INFO", "IN RANGE");
-                    return true;
+                    return Optional.ofNullable(e);
                 }
             }
         }
 
 
-        return false;
+        return Optional.empty();
 
 
     }
-    public void refreshListView(HolderClass holderClass){
 
+    public void refreshListView(HolderClass holderClass) {
+        Log.i("INFO", locationEntityList.toString());
         adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
         //refresh
         try {
             locationEntityList = new GetLocationsTask().execute(holderClass).get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         ListView listView = (ListView) findViewById(android.R.id.list);
@@ -205,23 +240,22 @@ public class LocationActivity extends ListActivity {
         holderClass.appDatabase = appDatabase;
         try {
             getLocationEntities(holderClass);
-        } catch (ExecutionException e) {
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
+            Log.i("ERROR",e.toString());
         }
 
         if (locationEntityList != null || locationEntityList.size() > 0) {
-            for(LocationEntity e:locationEntityList)
-                //if(e.getLongitude()==locationEntity.getLongitude() && e.getLatidude()==locationEntity.getLatidude()){
-            if(Objects.equals(e.getName(), locationEntity.getName()) || !(Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), e.getLatidude()))){
+            for (LocationEntity e : locationEntityList)
+                if ((Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), locationEntity.getLongitude()))) {
                     inDatabase = true;
                 }
         }
         //not in list
-        Log.i("INFO","");
+        Log.i("INFO", "not in list");
         return inDatabase;
     }
-    //TODO
-    //METHOD THAT RETURNS A SPECIFIC MATCHING(LAT;LONG) LOCATIONENTITY
+
+
 
     public void removeListEntry(View view) {
         ImageButton bt = (ImageButton) view;
@@ -235,17 +269,17 @@ public class LocationActivity extends ListActivity {
         adapter.remove(item2remove);
     }
 
-    public void changeWirelessPreferences(View view){
+    public void changeWirelessPreferences(View view) {
         ToggleButton toggleButton = (ToggleButton) view;
         LocationEntity locationEntity = (LocationEntity) toggleButton.getTag();
 
 
-        if(locationEntity.isWirelessPreferences()){
+        if (locationEntity.isWirelessPreferences()) {
             //AN
             toggleButton.setTextOff("OFF");
             toggleButton.toggle();
             locationEntity.setWirelessPreferences(false);
-        } else{
+        } else {
             //AUS
             toggleButton.setTextOn("ON");
             toggleButton.toggle();
@@ -253,7 +287,7 @@ public class LocationActivity extends ListActivity {
         }
 
 
-        Log.i("INFO","TOGGLED SWITCH FOR ENTITY");
+        Log.i("INFO", "TOGGLED SWITCH FOR ENTITY");
         HolderClass holderClass = new HolderClass();
         holderClass.locationEntity = locationEntity;
         holderClass.appDatabase = appDatabase;
@@ -268,13 +302,13 @@ public class LocationActivity extends ListActivity {
         }
     }
 
-    public void modifyName(View view){
+    public void modifyName(View view) {
         ImageButton imageButton = (ImageButton) view;
         LocationEntity locationEntity = (LocationEntity) imageButton.getTag();
 
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
-        holderClass.locationEntity=locationEntity;
+        holderClass.locationEntity = locationEntity;
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(LocationActivity.this);
 
@@ -330,11 +364,54 @@ public class LocationActivity extends ListActivity {
         new InsertLocationTask().execute(holderClass);
         refreshListView(holderClass);
     }
+
     //TODO BUGGED
-    public void updateLocationEntity(HolderClass holderClass){
+    public void updateLocationEntity(HolderClass holderClass) {
         removeLocationEntity(holderClass);
         insertLocationEntity(holderClass);
         //new UpdateLocationTask().execute(holderClass);
     }
+
+    /*
+    final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
+            double lo = intent.getDoubleExtra("locationLo", 0);
+            double la = intent.getDoubleExtra("locationLa", 0);
+
+            Location loc = new Location("dummyProvider");
+            loc.setLongitude(intent.getDoubleExtra("locationLa", 0));
+            loc.setLongitude(intent.getDoubleExtra("locationLo", 0));
+            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
+            if (locationEntity.isPresent()) {//need to check if relevant location {
+                //TURN ON RELATED WLAN/S
+                wifiManager.setWifiEnabled(true);
+                List<ScanResult> results = wifiManager.getScanResults();
+                List<String> strResults = new ArrayList<>();
+                results.forEach(scanResult -> {
+                    strResults.add(scanResult.SSID);
+                });
+
+                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
+                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
+                    sendBroadcast(newConnectionIntent);
+                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
+                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
+
+                }
+            } else {
+                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
+
+            }
+
+
+        }
+
+    }; */
+
+
+
 
 }

@@ -12,6 +12,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -34,17 +36,23 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
+import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -69,10 +77,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private AppDatabase appDatabase;
 
     JobScheduler jobScheduler;
-    private LocationActivity locationActivity = new LocationActivity();
 
     private boolean mapZoomed = false;
     private List<LocationEntity> locationEntityList;
+    private WifiManager wifiManager;
+    private LocationConverter locationConverter = new LocationConverter();
+
+    private ArrayList<Marker> mMarkers = new ArrayList<>();
+
 
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -109,6 +121,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
 
         appDatabase = Room.databaseBuilder(getApplicationContext(),
                 AppDatabase.class, "app-database").build();
@@ -231,6 +244,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         mMap = googleMap;
         try {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -240,11 +260,33 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setMyLocationEnabled(true);
             LatLng graz = new LatLng(47.074458, 15.438041);                 //  Latitude, Longitude in degrees.
             mMap.addMarker(new MarkerOptions().position(graz).title("Marker in Graz"));
+            mMap.clear();
+            if(locationEntityList.size()>0){
+            for (LocationEntity e : locationEntityList) {
+                LatLng ll = new LatLng(e.getLatidude(), e.getLongitude());
+
+
+                BitmapDescriptor bitmapMarker;
+
+                bitmapMarker = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+
+
+                mMarkers.add(mMap.addMarker(new MarkerOptions().position(ll).title(e.getName())
+                        .snippet("saved Location")));
+
+                Log.i(TAG,"Setting up marker for position:"+ll+"  " +mMarkers.get(mMarkers.size()-1).getId());
+            }
+            }else {
+                Log.i("INFO","NO LOCATIONS FOUND");
+            }
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to access map!", e);
             throw e;
         }
-    }
+
+        }
+
+
 
     @Override
     protected void onPause(){
@@ -304,10 +346,35 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
 
             }
+            HolderClass holderClass = new HolderClass();
+            holderClass.appDatabase = appDatabase;
+            Location loc = new Location("dummyProvider");
+            loc.setLatitude(la);
+            loc.setLongitude(lo);
+            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
 
 
-            Toast.makeText(getApplicationContext(), "Location updated", Toast.LENGTH_SHORT).show();
+            if (locationEntity.isPresent()) {
+                //TURN ON RELATED WLAN
+                wifiManager.setWifiEnabled(true);
+                List<ScanResult> results = wifiManager.getScanResults();
+                List<String> strResults = new ArrayList<>();
+                results.forEach(scanResult -> {
+                    strResults.add(scanResult.SSID);
+                });
+                Log.i("loc ssid",locationEntity.get().getWlanSSID());
+                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
+                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
+                    sendBroadcast(newConnectionIntent);
+                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
+                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
 
+                }
+            } else {
+                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
+
+            }
 
         }
 
@@ -342,4 +409,49 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         startActivity(i);
     }
 
+    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (locationEntityList != null && locationEntityList.size() > 0) {
+
+            for (LocationEntity e : locationEntityList) {
+                Location locationInDB = locationConverter.convert2Location(e);
+                float distanceInMeters = locationInDB.distanceTo(newLocation);
+                boolean result = distanceInMeters < 300;
+                if (result) {
+                    Log.i("INFO", "IN RANGE");
+                    return Optional.ofNullable(e);
+                }
+            }
+        }
+
+        return Optional.empty();
+
+    }
+
+    public boolean wlanInRange(List<String> stringList, LocationEntity locationEntity) {
+        if (stringList.size() > 0 && stringList != null) {
+
+            for (String s : stringList) {
+                Log.i("INFO", s +"  "+locationEntity.getWlanSSID());
+                s = "\""+s+"\"";
+                if (s.equals(locationEntity.getWlanSSID())) {
+                    Log.i("INFO",s +"  "+locationEntity.getWlanSSID());
+                    return true;
+                }
+            }
+
+        }
+        return false;
+    }
+
+    public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
+        locationEntityList = new GetLocationsTask().execute(holderClass).get();
+
+    }
 }
