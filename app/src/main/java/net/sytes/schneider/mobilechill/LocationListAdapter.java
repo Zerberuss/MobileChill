@@ -73,10 +73,7 @@ public class LocationListAdapter extends ArrayAdapter<LocationEntity> {
             holder.changeWirelessPreferencesButton.toggle();
         }
 
-        if(promptsView !=null){
-        //setup button
-
-        }
+     
 
 
 
