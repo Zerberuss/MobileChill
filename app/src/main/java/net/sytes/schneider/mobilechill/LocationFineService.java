@@ -58,7 +58,6 @@ public class LocationFineService extends Service {
         registerReceiver(mSetKeepSendingReceiver,
                 new IntentFilter(LocationFineService.ACTION_SET_KEEP_SENDING_UPDATES));
 
-        locationClient=getFusedLocationProviderClient(this);
     }
 
     @Nullable
@@ -95,6 +94,8 @@ public class LocationFineService extends Service {
             }
         };
 
+        locationClient=getFusedLocationProviderClient(this);
+
         // new Google API SDK v11 uses getFusedLocationProviderClient(this)
         locationClient.requestLocationUpdates(mLocationRequest, mLocationCallback,
                 Looper.myLooper());
@@ -126,11 +127,12 @@ public class LocationFineService extends Service {
 
     private void stopLocationUpdates() {
         locationClient.removeLocationUpdates(mLocationCallback);
+        locationClient=null;
     }
 
     public void onLocationChanged(Location location) {
         if (location != null) {
-            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude());
+            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude() + "KEEP GETTING: " + KEEP_SENDING_UPDATES);
             if(!KEEP_SENDING_UPDATES)
                 stopLocationUpdates();
 
@@ -155,7 +157,8 @@ public class LocationFineService extends Service {
 
             if(newKeepsending && !KEEP_SENDING_UPDATES) {
                 KEEP_SENDING_UPDATES = true;
-                startLocationUpdates();
+                if(locationClient == null)
+                    startLocationUpdates();
             }
             KEEP_SENDING_UPDATES = newKeepsending;
         }
