@@ -11,12 +11,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Geocoder;
 import android.location.Location;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
@@ -30,7 +32,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -40,6 +44,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
 import net.sytes.schneider.mobilechill.database.Converter.Converters;
@@ -48,10 +53,13 @@ import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 
@@ -131,7 +139,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         holderClass.appDatabase = appDatabase;
 
 
-
+        wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
         mTextMessage = (TextView) findViewById(R.id.message);
         addWifiLocation = (FrameLayout) findViewById(R.id.addWifiLocation);
         addHomeButton = (FloatingActionButton) findViewById(R.id.addHomeButton);
@@ -405,7 +413,67 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     void addNewLocation(){
         //vars: wifiSSID, lastLocation
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
 
+        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+
+        LocationEntity locationEntity = new LocationEntity();
+        locationEntity = locationConverter.convert2LocationEntity(lastLocation,geocoder);
+
+        //check if in DB
+        if(!checkIfinDatabase(locationEntity)){
+            locationEntity.setWlanSSID(getConnectedSSID());
+
+
+            holderClass.locationEntity = locationEntity;
+
+            insertLocationEntity(holderClass);
+            Snackbar.make(findViewById(R.id.container), "New Location saved.",
+                    Snackbar.LENGTH_SHORT)
+                    .show();
+
+        } else {
+            Toast.makeText(getApplicationContext(), "Location already saved.", Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    public void insertLocationEntity(HolderClass holderClass) {
+        new InsertLocationTask().execute(holderClass);
+
+    }
+
+    private boolean checkIfinDatabase(LocationEntity locationEntity) {
+        boolean inDatabase = false; //Default
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            Log.i("ERROR",e.toString());
+        }
+
+        if (locationEntityList != null || locationEntityList.size() > 0) {
+            for (LocationEntity e : locationEntityList)
+                if ((Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), locationEntity.getLongitude()))) {
+                    inDatabase = true;
+                }
+        }
+        //not in list
+        Log.i("INFO", "not in list");
+        return inDatabase;
+    }
+
+    public String getConnectedSSID() {
+
+        if (wifiManager.getConnectionInfo() != null) {
+            return wifiManager.getConnectionInfo().getSSID();
+
+        }
+
+
+        return "";
     }
 
 }
