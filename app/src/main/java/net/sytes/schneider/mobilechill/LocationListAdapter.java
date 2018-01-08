@@ -3,13 +3,10 @@ package net.sytes.schneider.mobilechill;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -48,7 +45,7 @@ public class LocationListAdapter extends ArrayAdapter<LocationEntity> {
             promptsView = vi.inflate(R.layout.prompts,null);
 
         }
-        Log.i("Info","refreshed View");
+        //Log.i("Info","refreshed View");
         ViewHolder holder = new ViewHolder();
         //setupItem(holder);
         locationEntityList.get(position).setName(locationEntityList.get(position).getName());

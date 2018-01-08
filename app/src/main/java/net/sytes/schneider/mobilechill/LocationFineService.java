@@ -119,7 +119,7 @@ public class LocationFineService extends Service {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.d("MapDemoActivity", "Error trying to get last GPS location");
+                        //Log.d("MapDemoActivity", "Error trying to get last GPS location");
                         e.printStackTrace();
                     }
                 });
@@ -132,7 +132,7 @@ public class LocationFineService extends Service {
 
     public void onLocationChanged(Location location) {
         if (location != null) {
-            Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude() + "KEEP GETTING: " + KEEP_SENDING_UPDATES);
+            //Log.i("Fine Location Changed", location.getLatitude() + " and " + location.getLongitude() + "KEEP GETTING: " + KEEP_SENDING_UPDATES);
             if(!KEEP_SENDING_UPDATES)
                 stopLocationUpdates();
 
@@ -143,7 +143,7 @@ public class LocationFineService extends Service {
     final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.i(TAG, "Fine Location Info will be sent out..");
+            //Log.i(TAG, "Fine Location Info will be sent out..");
             getLastLocation();
         }
     };
@@ -153,7 +153,7 @@ public class LocationFineService extends Service {
         public void onReceive(Context c, Intent intent) {
             boolean newKeepsending = intent.getBooleanExtra("keepSending",false);
 
-            Log.i(TAG, "Configuring Keep Sending Setting: " + newKeepsending);
+            //Log.i(TAG, "Configuring Keep Sending Setting: " + newKeepsending);
 
             if(newKeepsending && !KEEP_SENDING_UPDATES) {
                 KEEP_SENDING_UPDATES = true;

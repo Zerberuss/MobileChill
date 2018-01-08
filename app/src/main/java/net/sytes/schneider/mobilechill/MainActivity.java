@@ -52,9 +52,8 @@ import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
-import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
-import net.sytes.schneider.mobilechill.database.Tasks.Send2ServerTask;
 import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
+import net.sytes.schneider.mobilechill.database.Tasks.Send2ServerTask;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -428,10 +427,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.i("loc ssid", locationEntity.get().getWlanSSID());
                 if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
                     Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
+                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());
                     sendBroadcast(newConnectionIntent);
-                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
-                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
+                    //Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
+                    //Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
 
                 }
             }
@@ -519,7 +518,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         try {
             getLocationEntities(holderClass);
         } catch (ExecutionException | InterruptedException e) {
-            Log.i("ERROR",e.toString());
+            //Log.i("ERROR",e.toString());
         }
 
         if (locationEntityList != null || locationEntityList.size() > 0) {
@@ -529,7 +528,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 }
         }
         //not in list
-        Log.i("INFO", "not in list");
+        //Log.i("INFO", "not in list");
         return inDatabase;
     }
 
@@ -549,10 +548,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         if (stringList.size() > 0 && stringList != null) {
 
             for (String s : stringList) {
-                Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                //Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
                 s = "\"" + s + "\"";
                 if (s.equals(locationEntity.getWlanSSID())) {
-                    Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                    //Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
                     return true;
                 }
             }
@@ -597,7 +596,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 float distanceInMeters = locationInDB.distanceTo(newLocation);
                 boolean result = distanceInMeters < 300;
                 if (result) {
-                    Log.i("INFO", "IN RANGE");
+                    //Log.i("INFO", "IN RANGE");
                     return Optional.ofNullable(e);
                 }
             }

@@ -14,7 +14,6 @@ import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.security.AccessControlException;
@@ -48,7 +47,7 @@ public class ConnectionService extends Service {
     @Override
     public void onCreate()
     {
-        Log.w(TAG, "onCreate");
+        //Log.w(TAG, "onCreate");
         initializeConnectionManager();
     }
 
@@ -65,13 +64,13 @@ public class ConnectionService extends Service {
 
 
 
-                Log.i(TAG, "New Wifi Scan!\n");
+                //Log.i(TAG, "New Wifi Scan!\n");
 
                 saveWifiDetails(mScanResults);
                 //Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
 
                 if (netInfo != null && homeWifiSsid != null && !wifiConnection.equals(homeWifiSsid)){
-                    Log.i(TAG, "connectToWif! " );
+                    //Log.i(TAG, "connectToWif! " );
                     connectToWifiSsid(homeWifiSsid);
                 }
                 broadcastConnectionInfos();
@@ -83,7 +82,7 @@ public class ConnectionService extends Service {
         @Override
         public void onReceive(Context c, Intent intent) {
             boolean wifiOn = intent.getBooleanExtra("isWifiOn", true);
-            Log.w(TAG, "New Connection Info will be sent out.. " + wifiOn);
+            //Log.w(TAG, "New Connection Info will be sent out.. " + wifiOn);
 
             int status = mWifiManager.getWifiState();
             if(status != 0 && status != 1)       //disabled
@@ -111,14 +110,14 @@ public class ConnectionService extends Service {
             for (WifiConfiguration wifiConfiguration : wifiConfigurations) {
                 if (wifiConfiguration.SSID.equals("\"" + ssid + "\"")) {
                     mWifiManager.enableNetwork(wifiConfiguration.networkId, true);
-                    Log.i(TAG, "connectToWifi: will enable " + wifiConfiguration.SSID);
+                    //Log.i(TAG, "connectToWifi: will enable " + wifiConfiguration.SSID);
                     mWifiManager.reconnect();
                     wifiConnection = ssid;
-                    return; // return! (sometimes logcat showed me network-entries twice, which may will end in bugs
+                    return; // return! (sometimes Logcat showed me network-entries twice, which may will end in bugs
                 }
             }
         } catch (NullPointerException | IllegalStateException e) {
-            Log.e(TAG, "connectToWifi: Missing network configuration." + e);
+            //Log.e(TAG, "connectToWifi: Missing network configuration." + e);
         }
 
     }
@@ -148,7 +147,7 @@ public class ConnectionService extends Service {
             newConnetionIntent.putExtra("wifiSSIDList", wifiSSIDList);
         newConnetionIntent.putExtra("wifiSSID", homeWifiSsid);
 
-        Log.i(TAG, "Sending connection broadcast.");
+        //Log.i(TAG, "Sending connection broadcast.");
         sendBroadcast(newConnetionIntent);
     }
 

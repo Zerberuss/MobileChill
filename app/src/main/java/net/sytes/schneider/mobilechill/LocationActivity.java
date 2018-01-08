@@ -14,7 +14,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -43,7 +42,6 @@ import net.sytes.schneider.mobilechill.database.Tasks.RemoveLocationTask;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -181,7 +179,7 @@ public class LocationActivity extends ListActivity {
 
 
     public void refreshListView(HolderClass holderClass) {
-        Log.i("INFO", locationEntityList.toString());
+        //Log.i("INFO", locationEntityList.toString());
         adapter = new LocationListAdapter(LocationActivity.this, R.layout.location_list_item, locationEntityList);
         //refresh
         try {
@@ -208,7 +206,7 @@ public class LocationActivity extends ListActivity {
         try {
             getLocationEntities(holderClass);
         } catch (ExecutionException | InterruptedException e) {
-            Log.i("ERROR",e.toString());
+            //Log.i("ERROR",e.toString());
         }
 
         if (locationEntityList != null || locationEntityList.size() > 0) {
@@ -218,7 +216,7 @@ public class LocationActivity extends ListActivity {
                 }
         }
         //not in list
-        Log.i("INFO", "not in list");
+        //Log.i("INFO", "not in list");
         return inDatabase;
     }
 
@@ -253,7 +251,7 @@ public class LocationActivity extends ListActivity {
         }
 
 
-        Log.i("INFO", "TOGGLED SWITCH FOR ENTITY");
+        //Log.i("INFO", "TOGGLED SWITCH FOR ENTITY");
         HolderClass holderClass = new HolderClass();
         holderClass.locationEntity = locationEntity;
         holderClass.appDatabase = appDatabase;

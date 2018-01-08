@@ -12,7 +12,6 @@ import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -72,7 +71,7 @@ public class LocationService extends JobService {
 
     @Override
     public boolean onStartJob(JobParameters jobParameters) {
-        Log.i(TAG, "Start Job Called");
+        //Log.i(TAG, "Start Job Called");
 
         if(!isMyServiceRunning(LocationFineService.class))
             startService(new Intent(this, LocationFineService.class));
@@ -102,7 +101,7 @@ public class LocationService extends JobService {
 
     @Override
     public boolean onStopJob(JobParameters jobParameters) {
-        Log.w(TAG, "Stopping Job");
+        //Log.w(TAG, "Stopping Job");
 
         stopLocationUpdates();
 
@@ -169,7 +168,7 @@ public class LocationService extends JobService {
             .addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Log.d(TAG, "Error trying to get last passive location");
+                    //Log.d(TAG, "Error trying to get last passive location");
                     e.printStackTrace();
                 }
             });
@@ -177,9 +176,9 @@ public class LocationService extends JobService {
 
 
     public void onLocationChanged(Location location) {
-        Log.i(TAG, "New passive location...");
+        //Log.i(TAG, "New passive location...");
         if(isBetterLocation(mLastLocation, location)){
-            Log.i(TAG, "New passive set as new lastPosition!");
+            //Log.i(TAG, "New passive set as new lastPosition!");
             mLastLocation.set(location);
             if(!allLocationsDisabled)
                 checkForHomeAndsendLocationBroadcast(mLastLocation);
@@ -208,7 +207,7 @@ public class LocationService extends JobService {
     final BroadcastReceiver mNewFineInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            //Log.i(TAG, "New Fine Location received...");
+            ////Log.i(TAG, "New Fine Location received...");
             Location mLastGpsLocation = new Location("dummyprovider");
 
             mLastGpsLocation.setTime(Calendar.getInstance().getTimeInMillis());
@@ -237,7 +236,7 @@ public class LocationService extends JobService {
     }
 
     private void initializeBroadCastReceivers() {
-        Log.i(TAG, "initializeLocationManager");
+        //Log.i(TAG, "initializeLocationManager");
 
         registerReceiver(mNewInfoScanReceiver,
                 new IntentFilter(LocationService.ACTION_GET_NEW_LOCATION));
@@ -278,8 +277,8 @@ public class LocationService extends JobService {
         } else if(isNewer && timeDifference > TIME_DIFFERENCE_IGNORE_ACCURACY) {
             //If five minutes went by, also accept inaccurate position
             return true;
-        } else
-            Log.w(TAG, "new pos is not new enough (" + timeDifference + " !> " + TIME_DIFFERENCE_IGNORE_ACCURACY + ") and not accurate: new ac vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
+        } //else
+            //Log.w(TAG, "new pos is not new enough (" + timeDifference + " !> " + TIME_DIFFERENCE_IGNORE_ACCURACY + ") and not accurate: new ac vs. old ->  "+ newLocation.getAccuracy() +" !< "+ oldLocation.getAccuracy());
 
         return false;
     }
@@ -336,7 +335,7 @@ public class LocationService extends JobService {
                 float distanceInMeters = locationInDB.distanceTo(newLocation);
                 boolean result = distanceInMeters < 300;
                 if (result) {
-                    Log.i("INFO", "IN RANGE");
+                    //Log.i("INFO", "IN RANGE");
                     return Optional.ofNullable(e);
                 }
             }
