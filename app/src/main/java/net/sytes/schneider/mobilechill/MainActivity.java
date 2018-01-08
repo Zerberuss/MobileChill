@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -49,6 +50,7 @@ import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -84,6 +86,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationConverter locationConverter = new LocationConverter();
 
     private ArrayList<Marker> mMarkers = new ArrayList<>();
+
+    private Location lastLocation;
 
 
 
@@ -141,6 +145,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mapZoomed = false;
 
         addWifiLocation.animate().translationY(-2000);
+        wifiDetailsTxt.setText("\nYour current Position and Wifi Connection has been added as Home Location!\n\nCheck Home Locations to disable or remove the location.");
+        lastLocation = new Location("dummyprovider");
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
@@ -218,13 +224,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-            }
-        });
-
-
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
         registerReceiver(mLocationReceiver,
@@ -298,9 +297,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    void addNewLocation(){
-
-    }
 
 
 
@@ -342,19 +338,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         public void onReceive(Context c, Intent intent) {
             String localConnection = intent.getStringExtra("wifiConnection");
-            if (intent.getStringArrayExtra("wifiSSIDList") != null){
-                String[] ssids = intent.getStringArrayExtra("wifiSSIDList");
-                if (ssids != null) {
-                    for (String ssid : ssids) {
-                        if (localConnection.equals(ssid)) {         //if connected to Wifi and
-                            connectedSsid = ssid;
-                            wifiDetailsTxt.setText("\nYour Wifi Connection \"" + ssid + "\" has been added as Home Location!");
-                        }
-                    }
-                }
-            } else {
-                wifiDetailsTxt.setText("\nYour current Position has been added as Home Location!");
-            }
+            connectedSsid = intent.getStringExtra("wifiSSID");
+
             wifiDescription.setText(localConnection);
         }
     };
@@ -374,7 +359,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
                 }
             }
-
+            lastLocation.setTime(Calendar.getInstance().getTimeInMillis());
+            lastLocation.setAltitude(intent.getDoubleExtra("locationAl",0));
+            lastLocation.setAccuracy(intent.getFloatExtra("locationAc",0));
+            lastLocation.setLatitude(la);
+            lastLocation.setLongitude(lo);
         }
 
     };
@@ -413,4 +402,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         locationEntityList = new GetLocationsTask().execute(holderClass).get();
 
     }
+
+    void addNewLocation(){
+        //vars: wifiSSID, lastLocation
+
+    }
+
 }
