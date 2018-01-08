@@ -13,7 +13,7 @@
 
     <item
         android:id="@+id/navigation_notifications"
-        android:icon="@mipmap/ic_preference_wifi_grey"
+        android:icon="@mipmap/ic_launcher"
         android:title="@string/title_HomeLocation" />
 
 </menu>
