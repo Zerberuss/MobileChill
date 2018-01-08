@@ -3,15 +3,11 @@ package net.sytes.schneider.mobilechill;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -34,8 +30,6 @@ import android.widget.ToggleButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
@@ -45,9 +39,7 @@ import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
 import net.sytes.schneider.mobilechill.database.Tasks.RemoveLocationTask;
-import net.sytes.schneider.mobilechill.database.Tasks.UpdateLocationTask;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -186,32 +178,7 @@ public class LocationActivity extends ListActivity {
         return "";
     }
 
-    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
-        HolderClass holderClass = new HolderClass();
-        holderClass.appDatabase = appDatabase;
-        try {
-            getLocationEntities(holderClass);
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (locationEntityList != null && locationEntityList.size() > 0) {
 
-            for (LocationEntity e : locationEntityList) {
-                Location locationInDB = locationConverter.convert2Location(e);
-                float distanceInMeters = locationInDB.distanceTo(newLocation);
-                boolean result = distanceInMeters < 300;
-                if (result) {
-                    Log.i("INFO", "IN RANGE");
-                    return Optional.ofNullable(e);
-                }
-            }
-        }
-
-
-        return Optional.empty();
-
-
-    }
 
     public void refreshListView(HolderClass holderClass) {
         Log.i("INFO", locationEntityList.toString());
@@ -261,7 +228,6 @@ public class LocationActivity extends ListActivity {
         ImageButton bt = (ImageButton) view;
         LocationEntity item2remove = (LocationEntity) bt.getTag();
 
-        Toast.makeText(this, "Button " + bt.getTag().toString(), Toast.LENGTH_LONG).show();
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
         holderClass.locationEntity = item2remove;
@@ -365,53 +331,9 @@ public class LocationActivity extends ListActivity {
         refreshListView(holderClass);
     }
 
-    //TODO BUGGED
     public void updateLocationEntity(HolderClass holderClass) {
         removeLocationEntity(holderClass);
         insertLocationEntity(holderClass);
-        //new UpdateLocationTask().execute(holderClass);
     }
-
-    /*
-    final BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
-            double lo = intent.getDoubleExtra("locationLo", 0);
-            double la = intent.getDoubleExtra("locationLa", 0);
-
-            Location loc = new Location("dummyProvider");
-            loc.setLongitude(intent.getDoubleExtra("locationLa", 0));
-            loc.setLongitude(intent.getDoubleExtra("locationLo", 0));
-            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
-            if (locationEntity.isPresent()) {//need to check if relevant location {
-                //TURN ON RELATED WLAN/S
-                wifiManager.setWifiEnabled(true);
-                List<ScanResult> results = wifiManager.getScanResults();
-                List<String> strResults = new ArrayList<>();
-                results.forEach(scanResult -> {
-                    strResults.add(scanResult.SSID);
-                });
-
-                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
-                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
-                    sendBroadcast(newConnectionIntent);
-                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
-                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
-
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
-
-            }
-
-
-        }
-
-    }; */
-
-
-
 
 }

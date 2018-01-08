@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Geocoder;
 import android.location.Location;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -18,6 +19,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
@@ -25,6 +27,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -47,18 +50,24 @@ import net.sytes.schneider.mobilechill.database.Converter.Converters;
 import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.Send2ServerTask;
+import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -66,16 +75,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
 
+    private String connectedSsid;
     private final String TAG = "MainActivity";
     private int JOBID = 0;
     private TextView mTextMessage;
-    private FrameLayout nearbyWifiList;
+    private FrameLayout addWifiLocation;
     private FloatingActionButton addHomeButton;
     private ImageView wifiStatus;
     private TextView wifiDescription;
     private Switch wifiSwitch;
     private Switch locationTrackingSwitch;
     private TextView wifiDetailsTxt;
+    private Button okButton;
 
     private LocationDao locationDao;
     private Converters CONVERTER;
@@ -90,6 +101,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private ArrayList<Marker> mMarkers = new ArrayList<>();
 
+    private Location lastLocation;
 
     public BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -125,8 +137,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
-
         appDatabase = Room.databaseBuilder(getApplicationContext(),
                 AppDatabase.class, "app-database").build();
         HolderClass holderClass = new HolderClass();
@@ -138,8 +148,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             e.printStackTrace();
         }
 
+        wifiManager = (WifiManager) this.getSystemService(WIFI_SERVICE);
         mTextMessage = (TextView) findViewById(R.id.message);
-        nearbyWifiList = (FrameLayout) findViewById(R.id.nearbyWifiList);
+        addWifiLocation = (FrameLayout) findViewById(R.id.addWifiLocation);
         addHomeButton = (FloatingActionButton) findViewById(R.id.addHomeButton);
         wifiStatus = (ImageView) findViewById(R.id.wifistatus);
         wifiDescription = (TextView) findViewById(R.id.wifidescribtion);
@@ -147,23 +158,27 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         wifiDetailsTxt.setMovementMethod(new ScrollingMovementMethod());
         wifiSwitch = (Switch) findViewById(R.id.wifiswitch);
         locationTrackingSwitch = (Switch) findViewById(R.id.locationTrackingSwitch);
+        okButton = (Button) findViewById(R.id.okButton);
         mapZoomed = false;
 
-        nearbyWifiList.animate().translationY(-2000);
+        addWifiLocation.animate().translationY(-2000);
+        wifiDetailsTxt.setText("\nYour current Position and Wifi Connection has been added as Home Location!\n\nCheck Home Locations to disable or remove the location.");
+        lastLocation = new Location("dummyprovider");
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         navigation.setSelectedItemId(R.id.navigation_dashboard);
 
+        okButton.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View v) {
+                addLocationAnimation();
+            }
+        });
+
         addHomeButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (nearbyWifiList.getTranslationY() == -2000) {
-                    nearbyWifiList.animate()
-                            .translationY(300);
-                } else {
-                    nearbyWifiList.animate()
-                            .translationY(-2000);
-                }
+                addLocationAnimation();
             }
         });
 
@@ -255,17 +270,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
                 newConnectionIntent.putExtra("isWifiOn", isChecked);
-                newConnectionIntent.putExtra("ssid", "superwg");        //TODO REMOVE -> for testing only
                 sendBroadcast(newConnectionIntent);
             }
         });
-
-        locationTrackingSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-            }
-        });
-
 
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(ConnectionService.ACTION_BROADCAST_TAG));
@@ -327,11 +334,25 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    void addLocationAnimation(){
+        if(addWifiLocation.getTranslationY() == -2000 ) {
+            addWifiLocation.animate()
+                    .translationY(300);
+
+            addNewLocation();
+
+        } else {
+            addWifiLocation.animate()
+                    .translationY(-2000);
+        }
+    }
+
+
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onPause(){
         setGettingContinousUpdates(false);
+        super.onPause();
     }
 
     @Override
@@ -365,8 +386,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            wifiDetailsTxt.setText(intent.getStringExtra("wifiSSIDList"));
-            wifiDescription.setText(intent.getStringExtra("wifiConnection"));
+            String localConnection = intent.getStringExtra("wifiConnection");
+            connectedSsid = intent.getStringExtra("wifiSSID");
+
+            wifiDescription.setText(localConnection);
         }
     };
 
@@ -411,11 +434,12 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
 
                 }
-            } else {
-                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
-
             }
-
+            lastLocation.setTime(Calendar.getInstance().getTimeInMillis());
+            lastLocation.setAltitude(intent.getDoubleExtra("locationAl",0));
+            lastLocation.setAccuracy(intent.getFloatExtra("locationAc",0));
+            lastLocation.setLatitude(la);
+            lastLocation.setLongitude(lo);
         }
 
     };
@@ -449,6 +473,115 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         startActivity(i);
     }
 
+
+    public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
+        locationEntityList = new GetLocationsTask().execute(holderClass).get();
+
+    }
+
+    void addNewLocation(){
+        //vars: wifiSSID, lastLocation
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+
+        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+
+        LocationEntity locationEntity = new LocationEntity();
+        locationEntity = locationConverter.convert2LocationEntity(lastLocation,geocoder);
+
+        //check if in DB
+        if(!checkIfinDatabase(locationEntity)){
+            locationEntity.setWlanSSID(getConnectedSSID());
+
+
+            holderClass.locationEntity = locationEntity;
+
+            insertLocationEntity(holderClass);
+            Snackbar.make(findViewById(R.id.container), "New Location saved.",
+                    Snackbar.LENGTH_SHORT)
+                    .show();
+
+        } else {
+            Toast.makeText(getApplicationContext(), "Location already saved.", Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    public void insertLocationEntity(HolderClass holderClass) {
+        new InsertLocationTask().execute(holderClass);
+
+    }
+
+    private boolean checkIfinDatabase(LocationEntity locationEntity) {
+        boolean inDatabase = false; //Default
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            Log.i("ERROR",e.toString());
+        }
+
+        if (locationEntityList != null || locationEntityList.size() > 0) {
+            for (LocationEntity e : locationEntityList)
+                if ((Objects.equals(e.getLatidude(), locationEntity.getLatidude()) && Objects.equals(e.getLongitude(), locationEntity.getLongitude()))) {
+                    inDatabase = true;
+                }
+        }
+        //not in list
+        Log.i("INFO", "not in list");
+        return inDatabase;
+    }
+
+    public String getConnectedSSID() {
+
+        if (wifiManager.getConnectionInfo() != null) {
+            return wifiManager.getConnectionInfo().getSSID();
+
+        }
+
+
+        return "";
+    }
+
+
+    public boolean wlanInRange(List<String> stringList, LocationEntity locationEntity) {
+        if (stringList.size() > 0 && stringList != null) {
+
+            for (String s : stringList) {
+                Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                s = "\"" + s + "\"";
+                if (s.equals(locationEntity.getWlanSSID())) {
+                    Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
+                    return true;
+                }
+            }
+
+        }
+        return false;
+    }
+
+
+    public boolean isTurnedOn(){
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        for(LocationEntity e : locationEntityList){
+            if(e.isWirelessPreferences())
+            {
+              return e.isWirelessPreferences();
+            }
+        }
+
+        return false;
+    }
+
     public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
@@ -470,28 +603,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
+
         return Optional.empty();
 
-    }
-
-    public boolean wlanInRange(List<String> stringList, LocationEntity locationEntity) {
-        if (stringList.size() > 0 && stringList != null) {
-
-            for (String s : stringList) {
-                Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
-                s = "\"" + s + "\"";
-                if (s.equals(locationEntity.getWlanSSID())) {
-                    Log.i("INFO", s + "  " + locationEntity.getWlanSSID());
-                    return true;
-                }
-            }
-
-        }
-        return false;
-    }
-
-    public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
-        locationEntityList = new GetLocationsTask().execute(holderClass).get();
 
     }
+
 }
