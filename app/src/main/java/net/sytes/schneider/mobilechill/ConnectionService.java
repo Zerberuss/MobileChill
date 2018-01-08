@@ -18,6 +18,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.security.AccessControlException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -32,7 +33,7 @@ public class ConnectionService extends Service {
     private String wifiConnection = "";
     private String homeWifiSsid = "";
     private String wifiDetailsStr = "";
-    private String wifiSSIDList = "";
+    private ArrayList<String> wifiSSIDList;
 
 
     @Override
@@ -70,7 +71,7 @@ public class ConnectionService extends Service {
                 Log.i(TAG, "New Wifi Scan!\n");
 
                 saveWifiDetails(mScanResults);
-                Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
+                //Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
 
                 if (netInfo != null && homeWifiSsid != null && !wifiConnection.equals(homeWifiSsid)){
                     Log.i(TAG, "connectToWif! " );
@@ -89,12 +90,11 @@ public class ConnectionService extends Service {
             String ssid = intent.getStringExtra("ssid");
 
             mWifiManager.setWifiEnabled(wifiOn);
+            broadcastConnectionInfos();
 
             if(wifiOn) {
                 homeWifiSsid = ssid;
-
                 mWifiManager.startScan();
-                broadcastConnectionInfos();
             }
         }
     };
@@ -129,18 +129,16 @@ public class ConnectionService extends Service {
 
     public void saveWifiDetails(List<ScanResult> wifiList){
         String wifiTxt = null;
-        StringBuilder ssids = new StringBuilder();
+        ArrayList<String> ssids = new ArrayList();
 
         if(wifiList.size()>1) {
             wifiTxt = "There are " + wifiList.size() + " WIFIs available:";
-            ssids.append(wifiTxt).append("\n");
         }
         else {
             wifiTxt = "There is " + "one" + " WIFI available:";
-            ssids.append(wifiTxt).append("\n");
         }
         for (ScanResult wifi : wifiList) {
-            ssids.append("\n   ").append(wifi.SSID);
+            ssids.add(wifi.SSID);
 
             wifiTxt += "\n";
             wifiTxt += "\n " + wifi.SSID;
@@ -151,7 +149,7 @@ public class ConnectionService extends Service {
             wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
         }
         wifiDetailsStr = wifiTxt;
-        wifiSSIDList = ssids.toString();
+        wifiSSIDList = ssids;
     }
 
     private void initializeConnectionManager() {

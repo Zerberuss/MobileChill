@@ -11,8 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -30,7 +28,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -47,12 +44,11 @@ import net.sytes.schneider.mobilechill.database.Converter.Converters;
 import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationDao;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
-import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
+import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -336,44 +332,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             //Log.i(TAG, "Received Location ->  Accurency: " + intent.getFloatExtra("locationAc",0));
             double lo = intent.getDoubleExtra("locationLo", 0);
             double la = intent.getDoubleExtra("locationLa", 0);
-            if (locationTrackingSwitch.isChecked())
-                Log.i("location", lo + " " + la);
-            if (mMap != null) {
-                if (!mapZoomed) {                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
-                    mapZoomed = true;
-                } else
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
-
-            }
-            HolderClass holderClass = new HolderClass();
-            holderClass.appDatabase = appDatabase;
-            Location loc = new Location("dummyProvider");
-            loc.setLatitude(la);
-            loc.setLongitude(lo);
-            Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
-
-
-            if (locationEntity.isPresent()) {
-                //TURN ON RELATED WLAN
-                wifiManager.setWifiEnabled(true);
-                List<ScanResult> results = wifiManager.getScanResults();
-                List<String> strResults = new ArrayList<>();
-                results.forEach(scanResult -> {
-                    strResults.add(scanResult.SSID);
-                });
-                Log.i("loc ssid",locationEntity.get().getWlanSSID());
-                if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
-                    Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                    newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
-                    sendBroadcast(newConnectionIntent);
-                    Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
-                    Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
-
+            if (locationTrackingSwitch.isChecked()){
+                if (mMap != null) {
+                    if (!mapZoomed) {                                                     //zomm the map once with first Location Update (workaround -> onResume: map: null)
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), 18f));
+                        mapZoomed = true;
+                    } else
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(la, lo), mMap.getCameraPosition().zoom));
                 }
-            } else {
-                Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
-
             }
 
         }
@@ -409,30 +375,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         startActivity(i);
     }
 
-    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
-        HolderClass holderClass = new HolderClass();
-        holderClass.appDatabase = appDatabase;
-        try {
-            getLocationEntities(holderClass);
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (locationEntityList != null && locationEntityList.size() > 0) {
-
-            for (LocationEntity e : locationEntityList) {
-                Location locationInDB = locationConverter.convert2Location(e);
-                float distanceInMeters = locationInDB.distanceTo(newLocation);
-                boolean result = distanceInMeters < 300;
-                if (result) {
-                    Log.i("INFO", "IN RANGE");
-                    return Optional.ofNullable(e);
-                }
-            }
-        }
-
-        return Optional.empty();
-
-    }
 
     public boolean wlanInRange(List<String> stringList, LocationEntity locationEntity) {
         if (stringList.size() > 0 && stringList != null) {

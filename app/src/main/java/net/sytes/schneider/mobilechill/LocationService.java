@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
+import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
+import android.net.wifi.ScanResult;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -23,7 +25,16 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import net.sytes.schneider.mobilechill.database.AppDatabase;
+import net.sytes.schneider.mobilechill.database.LocationEntity;
+import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
+import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
+
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
@@ -48,6 +59,9 @@ public class LocationService extends JobService {
     private LocationCallback mLocationCallback;
 
     private Location mLastLocation = new Location("dummyprovider");
+    private AppDatabase appDatabase;
+    private List<LocationEntity> locationEntityList;
+
 
 
     public LocationService() {
@@ -63,6 +77,16 @@ public class LocationService extends JobService {
             startService(new Intent(this, ConnectionService.class));
 
         if (mLocationRequest == null) {
+            appDatabase = Room.databaseBuilder(getApplicationContext(),
+                    AppDatabase.class, "app-database").build();
+            HolderClass holderClass = new HolderClass();
+            holderClass.appDatabase = appDatabase;
+            try {
+                getLocationEntities(holderClass);
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+
             startLocationUpdates();
             initializeBroadCastReceivers();
             getFineLocation();
@@ -252,16 +276,67 @@ public class LocationService extends JobService {
         return false;
     }
 
-    void checkForHomeConnection(Location location){
+
+
+    void checkForHomeConnection(Location loc){
         System.out.print("Implement DB request and check for Homelocation");            //if mlastLocation im Umgreis von ca 3km -> LocationFineService fragen -> mit dessen antwort überprüfen ob HomeLocation innerhalb 300m liegt
         boolean isHome = false;
         boolean activateWlan = true;
 
-        /*
-        if(isHome && activateWlan){
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+
+        Optional<LocationEntity> locationEntity = locationRangeCheck(loc);
+
+
+        if (locationEntity.isPresent()) {
+            //TURN ON RELATED WLAN
+            wifiManager.setWifiEnabled(true);
+            List<String> strResults = new ArrayList<>();
+
+            Log.i("loc ssid",locationEntity.get().getWlanSSID());
+            if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
+                Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+                newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
+                sendBroadcast(newConnectionIntent);
+                Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
+                //Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
+
+            }
+        } else {
+            //Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
 
         }
-        */
+    }
+
+    public Optional<LocationEntity> locationRangeCheck(Location newLocation) {
+        HolderClass holderClass = new HolderClass();
+        holderClass.appDatabase = appDatabase;
+        try {
+            getLocationEntities(holderClass);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (locationEntityList != null && locationEntityList.size() > 0) {
+
+            for (LocationEntity e : locationEntityList) {
+                Location locationInDB = locationConverter.convert2Location(e);
+                float distanceInMeters = locationInDB.distanceTo(newLocation);
+                boolean result = distanceInMeters < 300;
+                if (result) {
+                    Log.i("INFO", "IN RANGE");
+                    return Optional.ofNullable(e);
+                }
+            }
+        }
+
+        return Optional.empty();
 
     }
+
+    public void getLocationEntities(HolderClass holderClass) throws ExecutionException, InterruptedException {
+        locationEntityList = new GetLocationsTask().execute(holderClass).get();
+
+    }
+
 }
