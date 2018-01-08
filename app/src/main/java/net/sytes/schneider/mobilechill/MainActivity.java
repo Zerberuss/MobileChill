@@ -210,7 +210,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
                 newConnectionIntent.putExtra("isWifiOn", isChecked);
-                newConnectionIntent.putExtra("ssid", "superwg");        //TODO REMOVE -> for testing only
                 sendBroadcast(newConnectionIntent);
             }
         });

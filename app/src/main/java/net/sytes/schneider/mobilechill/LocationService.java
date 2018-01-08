@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
-import android.net.wifi.ScanResult;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -26,11 +25,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
+import net.sytes.schneider.mobilechill.database.Converter.LocationConverter;
 import net.sytes.schneider.mobilechill.database.LocationEntity;
 import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +61,9 @@ public class LocationService extends JobService {
     private AppDatabase appDatabase;
     private List<LocationEntity> locationEntityList;
 
+    boolean leftLocation = false;
+
+    private LocationConverter locationConverter = new LocationConverter();
 
 
     public LocationService() {
@@ -76,7 +78,10 @@ public class LocationService extends JobService {
         if(!isMyServiceRunning(ConnectionService.class))
             startService(new Intent(this, ConnectionService.class));
 
+        leftLocation = false;
+
         if (mLocationRequest == null) {
+
             appDatabase = Room.databaseBuilder(getApplicationContext(),
                     AppDatabase.class, "app-database").build();
             HolderClass holderClass = new HolderClass();
@@ -291,21 +296,16 @@ public class LocationService extends JobService {
 
         if (locationEntity.isPresent()) {
             //TURN ON RELATED WLAN
-            wifiManager.setWifiEnabled(true);
-            List<String> strResults = new ArrayList<>();
-
-            Log.i("loc ssid",locationEntity.get().getWlanSSID());
-            if (locationEntity.get().isWirelessPreferences() && wlanInRange(strResults, locationEntity.get())) {
-                Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
-                newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());        //TODO REMOVE -> for testing only
-                sendBroadcast(newConnectionIntent);
-                Log.i("Connnect to Wlan with SSID:", locationEntity.get().getWlanSSID());
-                //Toast.makeText(getApplicationContext(), "Location updated and connected", Toast.LENGTH_SHORT).show();
-
-            }
-        } else {
-            //Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT).show();
-
+            Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+            newConnectionIntent.putExtra("isWifiOn", true);
+            newConnectionIntent.putExtra("ssid", locationEntity.get().getWlanSSID());
+            sendBroadcast(newConnectionIntent);
+            leftLocation = false;
+        } else if(!leftLocation){       //prevent sending intents continuously
+            Intent newConnectionIntent = new Intent(ConnectionService.ACTION_SEND_INFO_TAG);
+            newConnectionIntent.putExtra("isWifiOn", false);
+            sendBroadcast(newConnectionIntent);
+            leftLocation = true;
         }
     }
 
