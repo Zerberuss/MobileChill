@@ -3,15 +3,11 @@ package net.sytes.schneider.mobilechill;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.arch.persistence.room.Room;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -34,8 +30,6 @@ import android.widget.ToggleButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import net.sytes.schneider.mobilechill.database.AppDatabase;
@@ -45,9 +39,7 @@ import net.sytes.schneider.mobilechill.database.Tasks.GetLocationsTask;
 import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import net.sytes.schneider.mobilechill.database.Tasks.InsertLocationTask;
 import net.sytes.schneider.mobilechill.database.Tasks.RemoveLocationTask;
-import net.sytes.schneider.mobilechill.database.Tasks.UpdateLocationTask;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -261,7 +253,6 @@ public class LocationActivity extends ListActivity {
         ImageButton bt = (ImageButton) view;
         LocationEntity item2remove = (LocationEntity) bt.getTag();
 
-        Toast.makeText(this, "Button " + bt.getTag().toString(), Toast.LENGTH_LONG).show();
         HolderClass holderClass = new HolderClass();
         holderClass.appDatabase = appDatabase;
         holderClass.locationEntity = item2remove;

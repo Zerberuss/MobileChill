@@ -18,6 +18,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.security.AccessControlException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -25,14 +26,13 @@ public class ConnectionService extends Service {
     private static final String TAG = "ConnectionService";
     static final String ACTION_BROADCAST_TAG = "ConnectionServiceBroadcast";
     static final String ACTION_SEND_INFO_TAG = "ConnectionServiceSendInfo";
-    static final String ACTION_CONFIGURE_WIFI = "ConnectionServiceConfigureWifi";
-
 
     private WifiManager mWifiManager = null;
     private String wifiConnection = "";
     private String homeWifiSsid = "";
     private String wifiDetailsStr = "";
-    private String wifiSSIDList = "";
+    private ArrayList<String> wifiSSIDList;
+    private boolean wifiStatus;
 
 
     @Override
@@ -60,8 +60,10 @@ public class ConnectionService extends Service {
                 NetworkInfo netInfo = cm.getActiveNetworkInfo();
 
 
-                if (netInfo == null)
+                if (netInfo == null){
                     wifiConnection = ("no connection");
+
+                }
                 else if (netInfo.isConnected()){
                     wifiConnection = (mWifiManager.getConnectionInfo().getSSID());
                 } else if (netInfo.isConnectedOrConnecting())
@@ -70,7 +72,7 @@ public class ConnectionService extends Service {
                 Log.i(TAG, "New Wifi Scan!\n");
 
                 saveWifiDetails(mScanResults);
-                Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
+                //Toast.makeText(getApplicationContext(), "Wifi info updated", Toast.LENGTH_LONG).show();
 
                 if (netInfo != null && homeWifiSsid != null && !wifiConnection.equals(homeWifiSsid)){
                     Log.i(TAG, "connectToWif! " );
@@ -84,18 +86,21 @@ public class ConnectionService extends Service {
     final BroadcastReceiver mNewInfoScanReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent intent) {
-            Log.w(TAG, "New Connection Info will be sent out..");
             boolean wifiOn = intent.getBooleanExtra("isWifiOn", true);
-            String ssid = intent.getStringExtra("ssid");
+            Log.w(TAG, "New Connection Info will be sent out.. " + wifiOn);
 
-            mWifiManager.setWifiEnabled(wifiOn);
-
-            if(wifiOn) {
-                homeWifiSsid = ssid;
+            if(wifiOn != wifiStatus) {
+                mWifiManager.setWifiEnabled(wifiOn);
+                wifiStatus= wifiOn;
+                homeWifiSsid = mWifiManager.getConnectionInfo().getSSID();
+                wifiConnection = mWifiManager.getConnectionInfo().getSSID();
 
                 mWifiManager.startScan();
-                broadcastConnectionInfos();
+                if(intent.getExtras()!= null && intent.getExtras().containsKey("ssid"))
+                    homeWifiSsid = intent.getStringExtra("ssid");
             }
+
+            broadcastConnectionInfos();
         }
     };
 
@@ -122,25 +127,25 @@ public class ConnectionService extends Service {
         Intent newConnetionIntent = new Intent(ACTION_BROADCAST_TAG);
         newConnetionIntent.putExtra("wifiConnection", wifiConnection);
         newConnetionIntent.putExtra("wifiDetailsStr", wifiDetailsStr);
-        newConnetionIntent.putExtra("wifiSSIDList", wifiSSIDList);
+        if(wifiSSIDList!=null)
+            newConnetionIntent.putExtra("wifiSSIDList", wifiSSIDList);
+        newConnetionIntent.putExtra("wifiSSID", homeWifiSsid);
         sendBroadcast(newConnetionIntent);
     }
 
 
     public void saveWifiDetails(List<ScanResult> wifiList){
-        String wifiTxt = null;
-        StringBuilder ssids = new StringBuilder();
+        String wifiTxt;
+        ArrayList<String> ssids = new ArrayList();
 
         if(wifiList.size()>1) {
             wifiTxt = "There are " + wifiList.size() + " WIFIs available:";
-            ssids.append(wifiTxt).append("\n");
         }
         else {
             wifiTxt = "There is " + "one" + " WIFI available:";
-            ssids.append(wifiTxt).append("\n");
         }
         for (ScanResult wifi : wifiList) {
-            ssids.append("\n   ").append(wifi.SSID);
+            ssids.add(wifi.SSID);
 
             wifiTxt += "\n";
             wifiTxt += "\n " + wifi.SSID;
@@ -151,7 +156,7 @@ public class ConnectionService extends Service {
             wifiTxt += "\nchannelWidth  " + wifi.channelWidth;
         }
         wifiDetailsStr = wifiTxt;
-        wifiSSIDList = ssids.toString();
+        wifiSSIDList = ssids;
     }
 
     private void initializeConnectionManager() {
@@ -160,12 +165,21 @@ public class ConnectionService extends Service {
                 ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         PackageManager.PERMISSION_GRANTED) {
             if (mWifiManager == null) {
+                mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+                wifiStatus = true;
+                mWifiManager.setWifiEnabled(true);
+
                 registerReceiver(mWifiScanReceiver,
                         new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
                 registerReceiver(mNewInfoScanReceiver,
                         new IntentFilter(ConnectionService.ACTION_SEND_INFO_TAG));
 
-                mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                homeWifiSsid = mWifiManager.getConnectionInfo().getSSID();
+                wifiConnection = mWifiManager.getConnectionInfo().getSSID();
+
+                broadcastConnectionInfos();
+
                 mWifiManager.startScan();
             }
         } else {
