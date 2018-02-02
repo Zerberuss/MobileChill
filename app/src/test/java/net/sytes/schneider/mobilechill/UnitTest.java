@@ -1,7 +1,9 @@
 package net.sytes.schneider.mobilechill;
 
+import android.app.Activity;
 import android.arch.persistence.room.Room;
 import android.content.Context;
+import android.test.ActivityTestCase;
 import android.test.AndroidTestCase;
 import android.test.mock.MockContext;
 
@@ -13,6 +15,7 @@ import net.sytes.schneider.mobilechill.database.Tasks.HolderClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -20,32 +23,23 @@ import java.util.concurrent.ExecutionException;
 /**
  * Created by Timo Hasenbichler on 30.01.2018.
  */
+public class UnitTest extends AndroidTestCase {
 
-public class UnitTest  extends AndroidTestCase {
-
-
-    private AppDatabase appDatabase;
-    private Context context;
-    private List<LocationEntity> locationEntityList;
+    LocationEntity locationEntity;
 
 
     @Before
-    public void setUpDB() throws ExecutionException, InterruptedException {
-        context = new MockContext();
-        appDatabase = Room.databaseBuilder(context,
-                AppDatabase.class, "app-database").build();
-
-        HolderClass holderClass = new HolderClass();
-        holderClass.appDatabase = appDatabase;
-
-        locationEntityList = new GetLocationsTask().execute(holderClass).get();
-
+    public void setUp() throws ExecutionException, InterruptedException {
+        locationEntity = new LocationEntity();
+        locationEntity.setName("test");
+        locationEntity.setWlanSSID("testWlan");
     }
 
 
     @Test
-    public void checkAppDB(){
-        assertNotNull(locationEntityList);
+    public void checkLocationEntity() {
+        assertNotNull(locationEntity.getName());
+        assertNotNull(locationEntity.getWlanSSID());
     }
 
 
